@@ -369,7 +369,9 @@ input[type="text"]::placeholder { color: var(--muted); }
     font-size: 18px; font-variant-numeric: tabular-nums; color: var(--muted);
     margin-top: 6px; line-height: 1.2; transition: color 0.2s;
 }
-.project-card.running .card-time { color: var(--accent); }
+.project-card.running .card-time {
+    color: rgb(var(--project-r), var(--project-g), var(--project-b));
+}
 
 .card-chart {
     position: absolute; bottom: 0; left: 0; right: 0; height: 25%;
