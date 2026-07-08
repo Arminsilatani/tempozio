@@ -1240,24 +1240,20 @@ Version: 0.0.0
     function render() {
         if (!elements.emptyState || !elements.carousel || !elements.track) return;
 
-        // محاسبهٔ زمان آخرین فعالیت برای هر پروژه
         projects.forEach(p => {
             let lastActivity = 0;
             if (p.isRunning) {
-                lastActivity = Date.now();           // پروژهٔ در حال اجرا همیشه اول
+                lastActivity = Date.now();
             } else if (p.history && p.history.length > 0) {
                 lastActivity = Math.max(...p.history.map(h => h.start));
             } else {
-                // اگر پروژه هیچ سابقه‌ای ندارد، از created_at استفاده کن (در صورت وجود)
                 lastActivity = p.created_at ? new Date(p.created_at).getTime() : 0;
             }
             p._lastActivity = lastActivity;
         });
 
-        // مرتب‌سازی نزولی بر اساس آخرین فعالیت
         projects.sort((a, b) => b._lastActivity - a._lastActivity);
 
-        // بقیهٔ کد render (نمایش کارت‌ها) کاملاً مشابه قبل
         if (projects.length === 0) {
             elements.emptyState.style.display = 'flex';
             elements.carousel.style.display = 'none';
