@@ -280,7 +280,11 @@ input[type="text"]::placeholder { color: var(--muted); }
     cursor: pointer;
 }
 .project-card:hover { background: var(--card-hover); }
-.project-card.running { border-color: var(--accent); background: rgba(167, 255, 61, 0.03); }
+.project-card.running {
+    border-color: rgb(var(--project-r), var(--project-g), var(--project-b));
+    background: rgba(var(--project-r), var(--project-g), var(--project-b), 0.05);
+    box-shadow: 0 0 8px rgba(var(--project-r), var(--project-g), var(--project-b), 0.15);
+}
 
 .neon-dot {
     position: absolute; top: 10px; right: 10px; width: 8px; height: 8px;
