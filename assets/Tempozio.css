@@ -878,11 +878,11 @@ input[type="text"]::placeholder { color: var(--muted); }
 .mini-project-card:not(:last-child)::after {
     content: '';
     position: absolute;
-    right: -25px;                  /* نصف gap (24px / 2) برای قرارگیری در وسط فاصله */
+    right: -25px;
     top: 50%;
     transform: translateY(-50%);
     width: 1px;
-    height: 24px;                  /* ارتفاع خط */
+    height: 24px;
     background: var(--border);
     opacity: 0.5;
 }
