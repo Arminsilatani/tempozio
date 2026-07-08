@@ -1240,20 +1240,24 @@ Version: 0.0.0
     function render() {
         if (!elements.emptyState || !elements.carousel || !elements.track) return;
 
+        // محاسبهٔ زمان آخرین فعالیت برای هر پروژه
         projects.forEach(p => {
             let lastActivity = 0;
-            if (p.history && p.history.length > 0) {
-                lastActivity = Math.max(...p.history.map(h => h.start));
-            } else if (p.created_at) {
-                lastActivity = new Date(p.created_at).getTime();
-            }
             if (p.isRunning) {
-                lastActivity = Date.now();
+                lastActivity = Date.now();           // پروژهٔ در حال اجرا همیشه اول
+            } else if (p.history && p.history.length > 0) {
+                lastActivity = Math.max(...p.history.map(h => h.start));
+            } else {
+                // اگر پروژه هیچ سابقه‌ای ندارد، از created_at استفاده کن (در صورت وجود)
+                lastActivity = p.created_at ? new Date(p.created_at).getTime() : 0;
             }
             p._lastActivity = lastActivity;
         });
+
+        // مرتب‌سازی نزولی بر اساس آخرین فعالیت
         projects.sort((a, b) => b._lastActivity - a._lastActivity);
 
+        // بقیهٔ کد render (نمایش کارت‌ها) کاملاً مشابه قبل
         if (projects.length === 0) {
             elements.emptyState.style.display = 'flex';
             elements.carousel.style.display = 'none';
@@ -1266,6 +1270,83 @@ Version: 0.0.0
         elements.track.innerHTML = '';
 
         projects.forEach(project => {
+            const curr = getDisplayElapsed(project);
+            const card = document.createElement('div');
+            card.className = `project-card ${project.isRunning ? 'running' : ''}`;
+            card.dataset.id = project.id;
+
+            const color = project.color || '#a7ff3d';
+            const rgb = hexToRgb(color);
+            card.style.setProperty('--project-r', rgb.r);
+            card.style.setProperty('--project-g', rgb.g);
+            card.style.setProperty('--project-b', rgb.b);
+
+            const dot = document.createElement('div');
+            dot.className = `neon-dot ${project.isRunning ? 'blinking' : ''}`;
+            card.appendChild(dot);
+
+            const logoUrl = project.logo || '';
+            let logoHTML;
+            if (logoUrl) {
+                logoHTML = `
+                    <div class="project-logo has-image">
+                        <img src="${escapeHtml(logoUrl)}" alt="Logo" onerror="this.parentElement.classList.add('broken')">
+                        <span class="project-logo-letter">${project.name.charAt(0).toUpperCase()}</span>
+                    </div>`;
+            } else {
+                logoHTML = `<div class="project-logo" style="--logo-bg:${color}">${project.name.charAt(0).toUpperCase()}</div>`;
+            }
+
+            const topDiv = document.createElement('div');
+            topDiv.className = 'card-top';
+            topDiv.innerHTML = logoHTML;
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'card-name';
+            nameSpan.title = project.name;
+            nameSpan.textContent = project.name;
+            topDiv.appendChild(nameSpan);
+
+            if (project.category) {
+                const cats = project.category.split(',').map(c => c.trim()).filter(Boolean);
+                if (cats.length > 0) {
+                    const catsContainer = document.createElement('div');
+                    catsContainer.className = 'card-categories';
+                    cats.forEach((cat, index) => {
+                        const catSpan = document.createElement('span');
+                        catSpan.className = 'card-category-inline';
+                        catSpan.textContent = cat;
+                        catsContainer.appendChild(catSpan);
+                        if (index < cats.length - 1) {
+                            const divider = document.createElement('span');
+                            divider.className = 'category-divider';
+                            divider.textContent = '|';
+                            catsContainer.appendChild(divider);
+                        }
+                    });
+                    topDiv.appendChild(catsContainer);
+                }
+            }
+
+            card.appendChild(topDiv);
+
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'card-time';
+            timeDiv.id = `time-${project.id}`;
+            timeDiv.textContent = formatTime(curr);
+            card.appendChild(timeDiv);
+
+            const chartDiv = document.createElement('div');
+            chartDiv.className = 'card-chart';
+            chartDiv.id = `chart-${project.id}`;
+            card.appendChild(chartDiv);
+
+            const bottomDiv = document.createElement('div');
+            bottomDiv.className = 'card-bottom';
+            card.appendChild(bottomDiv);
+
+            elements.track.appendChild(card);
+            drawWeeklyChart(project, chartDiv);
         });
 
         updateArrowVisibility();
