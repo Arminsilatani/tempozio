@@ -1,0 +1,403 @@
+<!--
+/*
+Author: Armin Silatani
+Date: 2026-07-08
+Version: 0.0.0
+*/
+-->
+<!-- =========================== HOME PAGE ============================ -->
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <!-- :::::::::::::::::::::::::: META TAGS :::::::::::::::::::::::::: -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- :::::::::::::::::::::::::: SEO META :::::::::::::::::::::::::: -->
+    <title>Time tracker dashboard for projects | Tempozio</title>
+    <meta name="description" content="Use this time tracker to monitor your active projects and view detailed weekly overview charts of your productivity and working hours.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <!-- :::::::::::::::::::::::::: FAVICON & STYLES :::::::::::::::::::::::::: -->
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon-32.png">
+    <link rel="stylesheet" href="/assets/Tempozio.css">
+    <link rel="stylesheet" href="https://arminsilatani.github.io/tools/assets/sidebar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+
+    <!-- :::::::::::::::::::::::::: RESOURCE HINTS :::::::::::::::::::::::::: -->
+    <!-- <link rel="preconnect" href="[FONT_OR_API_DOMAIN]" crossorigin> -->
+    <!-- <link rel="preload" href="[CRITICAL_RESOURCE_URL]" as="[style|script|font]"> -->
+
+    <!-- :::::::::::::::::::::::::: OPEN GRAPH :::::::::::::::::::::::::: -->
+
+    <!-- :::::::::::::::::::::::::: TWITTER CARD :::::::::::::::::::::::::: -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Time tracker dashboard for projects | Tempozio">
+    <meta name="twitter:description" content="Use this time tracker to monitor your active projects and view detailed weekly overview charts of your productivity and working hours.">
+
+    <!-- :::::::::::::::::::::::::: CANONICAL & HREFLANG :::::::::::::::::::::::::: -->
+    <link rel="canonical" href="https://tempozio.arminsilatani.com/">
+    <!-- <link rel="alternate" hreflang="[LANG_CODE]" href="[ABSOLUTE_URL_TO_ALT_VERSION]"> -->
+
+    <!-- :::::::::::::::::::::::::: SCHEMA :::::::::::::::::::::::::: -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://tempozio.arminsilatani.com/#WebSite",
+          "url": "https://tempozio.arminsilatani.com/",
+          "name": "Tempozio",
+          "description": "Effortlessly track time across multiple concurrent projects and monitor your overall progress.",
+          "inLanguage": "en",
+          "publisher": {
+            "@id": "https://tempozio.arminsilatani.com/#Person"
+          }
+        },
+        {
+          "@type": "WebPage",
+          "@id": "https://tempozio.arminsilatani.com/#WebPage",
+          "url": "https://tempozio.arminsilatani.com/",
+          "name": "Tempozio",
+          "description": "Effortlessly track time across multiple concurrent projects and monitor your overall progress.",
+          "isPartOf": {
+            "@id": "https://tempozio.arminsilatani.com/#WebSite"
+          },
+          "about": {
+            "@id": "https://tempozio.arminsilatani.com/#MainEntity"
+          },
+          "primaryImageOfPage": {
+            "@id": "https://tempozio.arminsilatani.com/assets/Te.svg"
+          },
+          "inLanguage": "en",
+          "datePublished": "2026-07-08",
+          "dateModified": "2026-07-08"
+        },
+        {
+          "@type": "Person",
+          "@id": "https://tempozio.arminsilatani.com/#Person",
+          "name": "Armin Silatani",
+          "alternateName": "Armin Silatani",
+          "jobTitle": "Digital Marketing Specialist",
+          "url": "https://arminsilatani.com/",
+          "image": "https://arminsilatani.com/images/favicon.png",
+          "email": "mailto:contact@arminsilatani.com",
+          "telephone": "+989125759466",
+          "sameAs": [
+            "https://www.linkedin.com/in/arminsilatani/",
+            "https://github.com/Arminsilatani",
+            "https://www.instagram.com/arminsilatani",
+            "https://t.me/ArminSilatani",
+            "https://wa.me/+989125759466"
+          ]
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://tempozio.arminsilatani.com/#MainEntity",
+          "name": "Tempozio",
+          "url": "https://tempozio.arminsilatani.com/",
+          "description": "Effortlessly track time across multiple concurrent projects and monitor your overall progress.",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "image": "https://tempozio.arminsilatani.com/assets/Te.svg",
+          "author": {
+            "@id": "https://tempozio.arminsilatani.com/#Person"
+          },
+          "creator": {
+            "@id": "https://tempozio.arminsilatani.com/#Person"
+          },
+          "publisher": {
+            "@id": "https://tempozio.arminsilatani.com/#Person"
+          },
+          "datePublished": "2026-07-08",
+          "dateModified": "2026-07-08",
+          "inLanguage": "en",
+          "isAccessibleForFree": true
+        },
+        {
+          "@type": "ImageObject",
+          "@id": "https://tempozio.arminsilatani.com/assets/Te.svg",
+          "url": "https://tempozio.arminsilatani.com/assets/Te.svg",
+          "contentUrl": "https://tempozio.arminsilatani.com/assets/Te.svg",
+          "name": "Tempozio icon",
+          "inLanguage": "en"
+        }
+      ]
+    }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js" defer></script>
+    <script src="assets/supabase.min.js" defer></script>
+    <script src="https://arminsilatani.github.io/tools/assets/sidebar-component.js" type="module" defer></script>
+    <script src="assets/Tempozio.js" defer></script>
+</head>
+
+<body>
+    <!-- ------------------------- INITIAL LOADER ------------------------- -->
+    <div id="initial-loader" class="fullpage-loader">
+        <div class="lds-grid">
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+            <div></div><div></div><div></div>
+        </div>
+    </div>
+
+    <!-- ------------------------- AUTHENTICATION MODAL ------------------------- -->
+    <div id="auth-overlay" class="modal">
+        <div class="modal-content auth-modal-content">
+            <div class="auth-branding">
+                <img src="assets/Te.svg" alt="Tempozio Logo" class="auth-logo">
+                <h1 class="auth-app-name">Tempozio Time Tracker</h1>
+                <p class="auth-tagline">Sign in to track your time</p>
+            </div>
+            <div id="step-1" class="auth-step active">
+                <input type="email" id="auth-email" class="modal-input" placeholder="Your email" autocomplete="email">
+                <p class="auth-error" id="auth-error-1"></p>
+                <button id="auth-continue-btn" class="btn-primary auth-full-width">Continue</button>
+            </div>
+            <div id="step-2-login" class="auth-step">
+                <p class="auth-email-display" id="login-email-display"></p>
+                <input type="password" id="auth-password-login" class="modal-input" placeholder="Password" autocomplete="current-password">
+                <p class="auth-error" id="auth-error-login"></p>
+                <div class="auth-btn-row">
+                    <button id="auth-back-to-email" class="btn-secondary small">Back</button>
+                    <button id="auth-signin-btn" class="btn-primary">Sign In</button>
+                </div>
+                <p class="auth-forgot-text">Forgot password? <a href="#" id="forgot-link" class="auth-link">Reset</a></p>
+            </div>
+            <div id="step-2-register" class="auth-step">
+                <h3 class="auth-step-subtitle">Create Account</h3>
+                <p class="auth-email-display" id="register-email-display"></p>
+                <input type="text" id="auth-first-name" class="modal-input auth-input-spaced" placeholder="First Name">
+                <input type="text" id="auth-last-name" class="modal-input auth-input-spaced" placeholder="Last Name">
+                <input type="password" id="auth-password-register" class="modal-input" placeholder="Choose password (min 6 char)" autocomplete="new-password">
+                <p class="auth-error" id="auth-error-register"></p>
+                <div class="auth-btn-row">
+                    <button id="auth-back-to-email-2" class="btn-secondary small">Back</button>
+                    <button id="auth-register-btn" class="btn-primary">Register</button>
+                </div>
+            </div>
+            <div id="step-forgot" class="auth-step">
+                <h3 class="auth-step-title">Reset Password</h3>
+                <p class="auth-forgot-description">Enter your email to receive a reset link.</p>
+                <input type="email" id="forgot-email" class="modal-input" placeholder="Your email">
+                <p class="auth-message" id="forgot-message"></p>
+                <div class="auth-btn-row">
+                    <button id="auth-back-to-login" class="btn-secondary small">Back</button>
+                    <button id="auth-reset-btn" class="btn-primary">Send Reset Link</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ------------------------- MAIN APP CONTAINER ------------------------- -->
+    <div id="app-container" class="app-hidden">
+        <div class="glass-header">
+            <div class="header-inner">
+                <img src="assets/Te.svg" alt="Tempozio Logo" class="header-logo" onerror="this.style.display='none'">
+                <div class="header-text">
+                    <h1 class="tool-name">Tempozio</h1>
+                    <h2 class="tool-tagline">Time Tracker</h2>
+                </div>
+            </div>
+            <p class="tool-description">Effortlessly track time across multiple concurrent projects and monitor your overall progress.</p>
+        </div>
+
+        <main class="main-content">
+            <datalist id="category-list" class="hidden"></datalist>
+
+            <!-- ------------------------- ACTIVE PROJECTS ------------------------- -->
+            <section class="active-projects-section">
+                <div class="section-header">
+                    <h2 class="section-heading">Active Projects</h2>
+                    <div class="nav-arrows">
+                        <button class="nav-arrow nav-arrow-left" aria-label="Scroll left">&lt;</button>
+                        <button class="nav-arrow nav-arrow-right" aria-label="Scroll right">&gt;</button>
+                    </div>
+                </div>
+                <div class="projects-carousel" id="projects-carousel">
+                    <div id="projects-list" class="projects-track"></div>
+                </div>
+            </section>
+
+            <!-- ------------------------- EMPTY STATE ------------------------- -->
+            <div id="empty-state" class="empty-state">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <p>No active projects. Add a project to start tracking your time.</p>
+            </div>
+
+            <!-- ------------------------- DASHBOARD OVERVIEW ------------------------- -->
+            <section class="overview-dashboard">
+                <div class="weekly-overview">
+                    <h3>Weekly Overview</h3>
+                    <div class="weekly-stats">
+                        <div class="weekly-total">
+                            <span class="weekly-total-label">Total Time</span>
+                            <div class="weekly-value-row">
+                                <span class="weekly-total-value" id="weekly-total-time">00:00:00</span>
+                                <span class="weekly-change" id="weekly-change">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="weekly-chart-container" id="weekly-chart-container"></div>
+                </div>
+                <div class="project-breakdown">
+                    <h3>Project Breakdown</h3>
+                    <div class="breakdown-list" id="breakdown-list"></div>
+                </div>
+            </section>
+
+            <!-- ------------------------- RECENT ACTIVITY ------------------------- -->
+            <section class="recent-activity-section">
+                <h3 class="recent-activity-title">Recent Activity</h3>
+                <div class="weekly-mini-projects" id="weekly-mini-projects"></div>
+            </section>
+        </main>
+
+        <!-- ------------------------- FOOTER ------------------------- -->
+        <footer class="footer">
+            <div class="footer-signature">
+                <a href="https://arminsilatani.com/en/" target="_blank" rel="noopener noreferrer" title="Armin Silatani | Official Website">
+                    <span class="crafted">crafted by</span>
+                    <img src="assets/ArminSilatani.svg" alt="Armin Silatani" class="signature">
+                </a>
+            </div>
+        </footer>
+
+        <!-- ------------------------- SIDEBAR COMPONENT ------------------------- -->
+        <sidebar-component current-app="Tempozio">
+            <div slot="app-content">
+                <a href="#" class="sidebar-new-project-btn" id="sidebar-new-project-btn">
+                    <svg class="plus-icon-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Project
+                </a>
+                <div id="sidebar-projects-list"></div>
+            </div>
+        </sidebar-component>
+    </div>
+
+    <!-- ------------------------- NEW PROJECT MODAL ------------------------- -->
+    <div id="new-project-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="new-project-top-row">
+                <label for="new-project-logo" class="logo-upload-square" id="logo-upload-square">
+                    <span class="logo-letter hidden" id="logo-letter"></span>
+                    <svg class="pencil-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                    </svg>
+                    <img id="new-logo-preview" class="logo-preview-img hidden" alt="Logo preview">
+                </label>
+                <input type="file" id="new-project-logo" accept="image/*" hidden>
+                <div class="project-preview-texts">
+                    <span class="project-name-preview" id="project-name-preview">New Project</span>
+                    <span class="project-category-preview" id="project-category-preview"></span>
+                </div>
+            </div>
+            <input type="text" id="new-project-name" class="modal-input" placeholder="Project name" autocomplete="off">
+            <div class="modal-field compact" style="margin-bottom:12px;">
+                <div class="prefixed-input category-prefixed">
+                    <span class="prefix">Category:</span>
+                    <div id="new-project-category-container" style="flex:1;"></div>
+                </div>
+            </div>
+            <div class="color-input-wrapper">
+                <input type="text" id="new-project-color" class="modal-input" placeholder="Color" value="#a7ff3d" maxlength="7">
+                <span class="color-preview" id="new-color-preview"></span>
+            </div>
+            <button id="add-project-from-modal-btn" class="btn-primary">Add Project</button>
+        </div>
+    </div>
+
+    <!-- ------------------------- PROJECT DETAIL MODAL (populated by JS) ------------------------- -->
+    <div id="project-modal" class="modal">
+        <div class="modal-content"></div>
+    </div>
+
+    <!-- ------------------------- PROJECT DETAIL TEMPLATE ------------------------- -->
+    <template id="project-detail-template">
+        <button class="close-modal" id="modal-close-btn">&times;</button>
+        <div class="modal-header-row">
+            <div class="modal-logo-container"></div>
+            <div>
+                <h3 class="modal-title"></h3>
+            </div>
+        </div>
+        <div class="modal-field compact">
+            <div class="prefixed-input">
+                <span class="prefix">Name:</span>
+                <input type="text" id="edit-name" placeholder="Project name">
+            </div>
+        </div>
+        <div class="modal-field compact">
+            <div class="prefixed-input category-prefixed">
+                <span class="prefix">Category:</span>
+                <div id="edit-category-container" style="flex:1;"></div>
+            </div>
+            <datalist id="modal-cat-list" style="display:none;"></datalist>
+        </div>
+        <div class="modal-field compact">
+            <div class="prefixed-input">
+                <span class="prefix">Color:</span>
+                <input type="text" id="edit-color-hex" maxlength="7" placeholder="#aabbcc" class="hex-font">
+            </div>
+        </div>
+        <div class="project-time-box">
+            <div class="time-info">
+                <span class="active-time-label">Active Time</span>
+                <span class="modal-time-display" id="modal-time"></span>
+            </div>
+            <button id="modal-play-btn" class="modal-btn primary"></button>
+        </div>
+        <div class="history-section">
+            <h4 class="history-title">Session History</h4>
+            <div class="history-table-wrapper">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Duration</th>
+                            <th>Time Range</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button id="modal-save-btn" class="modal-btn primary compact">Save Changes</button>
+            <button id="modal-delete-btn" class="modal-btn danger compact">Delete Project</button>
+        </div>
+        <input type="file" id="edit-logo" accept="image/*" hidden>
+    </template>
+
+    <!-- ------------------------- CROP MODAL ------------------------- -->
+    <div id="crop-modal" class="modal">
+        <div class="modal-content crop-modal-content">
+            <span class="close-modal" id="crop-close">&times;</span>
+            <div class="crop-container">
+                <img id="crop-image" alt="Crop preview">
+            </div>
+            <div class="crop-actions">
+                <button id="crop-save-btn" class="btn-primary">Crop & Save</button>
+                <button id="crop-cancel-btn" class="btn-secondary">Cancel</button>
+            </div>
+            <div class="crop-branding">
+                <img src="assets/Zo.svg" alt="Zorio" class="crop-branding-logo">
+                <span class="crop-branding-text">powered by Zorio</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
