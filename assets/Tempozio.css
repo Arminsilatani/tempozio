@@ -878,7 +878,7 @@ input[type="text"]::placeholder { color: var(--muted); }
 .mini-project-card:not(:last-child)::after {
     content: '';
     position: absolute;
-    right: -12px;                  /* نصف gap (24px / 2) برای قرارگیری در وسط فاصله */
+    right: -25px;                  /* نصف gap (24px / 2) برای قرارگیری در وسط فاصله */
     top: 50%;
     transform: translateY(-50%);
     width: 1px;
