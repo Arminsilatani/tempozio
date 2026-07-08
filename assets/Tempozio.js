@@ -1162,7 +1162,22 @@ Version: 0.0.0
         const container = document.getElementById('weekly-mini-projects');
         if (!container) return;
 
-        const latestProjects = projects.slice(0, 4);
+        const projectsWithActivity = projects.map(p => {
+            let lastActivity = 0;
+            if (p.history && p.history.length > 0) {
+                lastActivity = Math.max(...p.history.map(h => h.start));
+            } else if (p.created_at) {
+                lastActivity = new Date(p.created_at).getTime();
+            }
+            if (p.isRunning) {
+                lastActivity = Date.now();
+            }
+            return { ...p, lastActivity };
+        });
+
+        projectsWithActivity.sort((a, b) => b.lastActivity - a.lastActivity);
+
+        const latestProjects = projectsWithActivity.slice(0, 4);
 
         if (!latestProjects.length) {
             container.innerHTML = '';
