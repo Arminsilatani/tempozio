@@ -1125,6 +1125,7 @@ Version: 0.0.0
         if (!list) return;
         const totalElapsed = projects.reduce((sum, p) => sum + getDisplayElapsed(p), 0);
         const last5 = projects.slice(0, 5);
+        last5.sort((a, b) => getDisplayElapsed(b) - getDisplayElapsed(a));
         let html = '';
         last5.forEach(p => {
             const elapsed = getDisplayElapsed(p);
