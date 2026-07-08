@@ -1277,9 +1277,11 @@ Version: 0.0.0
             card.style.setProperty('--project-g', rgb.g);
             card.style.setProperty('--project-b', rgb.b);
 
-            const dot = document.createElement('div');
-            dot.className = `neon-dot ${project.isRunning ? 'blinking' : ''}`;
-            card.appendChild(dot);
+            if (project.isRunning) {
+                const dot = document.createElement('div');
+                dot.className = 'neon-dot blinking';
+                card.appendChild(dot);
+            }
 
             const logoUrl = project.logo || '';
             let logoHTML;
