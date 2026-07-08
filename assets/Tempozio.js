@@ -1131,6 +1131,7 @@ Version: 0.0.0
             const elapsed = getDisplayElapsed(p);
             const percent = totalElapsed > 0 ? Math.round((elapsed / totalElapsed) * 100) : 0;
             const color = p.color || '#a7ff3d';
+            console.log(projects.map(p => ({ name: p.name, color: p.color })));
             html += `
                 <div class="breakdown-item">
                     <svg class="progress-ring" viewBox="0 0 36 36">
