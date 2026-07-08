@@ -875,6 +875,17 @@ input[type="text"]::placeholder { color: var(--muted); }
     display: flex; gap: 50px; overflow-x: auto; padding: 4px 0;
     scrollbar-width: thin; scrollbar-color: var(--accent) transparent;
 }
+.mini-project-card:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -12px;                  /* نصف gap (24px / 2) برای قرارگیری در وسط فاصله */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 24px;                  /* ارتفاع خط */
+    background: var(--border);
+    opacity: 0.5;
+}
 .weekly-mini-projects::-webkit-scrollbar { height: 4px; }
 .weekly-mini-projects::-webkit-scrollbar-track { background: transparent; }
 .weekly-mini-projects::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
