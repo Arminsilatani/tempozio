@@ -1137,6 +1137,3 @@ input[type="text"]::placeholder { color: var(--muted); }
     }
     
 }
-.project-logo:hover::after {
-    opacity: 1 !important;
-}
