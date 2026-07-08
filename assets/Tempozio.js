@@ -1127,18 +1127,23 @@ Version: 0.0.0
         const last5 = projects.slice(0, 5);
         last5.sort((a, b) => getDisplayElapsed(b) - getDisplayElapsed(a));
         let html = '';
+        const circumference = 2 * Math.PI * 15;   // ≈ 94.2478
+
         last5.forEach(p => {
             const elapsed = getDisplayElapsed(p);
             const percent = totalElapsed > 0 ? Math.round((elapsed / totalElapsed) * 100) : 0;
             const color = p.color || '#a7ff3d';
+
+            const offset = circumference - (percent / 100) * circumference;
+
             html += `
                 <div class="breakdown-item">
                     <svg class="progress-ring" viewBox="0 0 36 36">
                         <circle class="bg" cx="18" cy="18" r="15" />
                         <circle class="fill" cx="18" cy="18" r="15"
                             stroke="${color}"
-                            stroke-dasharray="${percent} 100"
-                            stroke-dashoffset="0" />
+                            stroke-dasharray="${circumference}"
+                            stroke-dashoffset="${offset}" />
                         <text x="18" y="18" dy="0.3em">${percent}%</text>
                     </svg>
                     <div class="breakdown-info">
@@ -1147,6 +1152,7 @@ Version: 0.0.0
                     </div>
                 </div>`;
         });
+
         if (last5.length === 0) {
             html = '<p style="font-size:14px; color:var(--muted); text-align:center;">No projects yet</p>';
         }
