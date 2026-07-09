@@ -631,26 +631,67 @@ Version: 0.0.0
             .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false });
 
-        if (error) { projects = []; return; }
+        if (error) {
+            projects = [];
+            return;
+        }
+
+        const now = Date.now();
+        const updatedProjects = [];
 
         projects = data.map(p => {
             const history = p.history || [];
-            const computedElapsed = history.reduce((sum, s) => sum + (s.duration || 0), 0);
-            if (p.elapsed !== computedElapsed) {
-                p.elapsed = computedElapsed;
-                sb.from('tempozio').update({ elapsed: computedElapsed }).eq('id', p.id).then(() => {}).catch(console.error);
+            let computedElapsed = history.reduce((sum, s) => sum + (s.duration || 0), 0);
+            let newLastStart = p.last_start_time;
+            let historyChanged = false;
+
+            if (p.is_running && p.last_start_time) {
+                const hasCurrentSession = history.some(s => s.start === p.last_start_time && !s.end);
+                if (!hasCurrentSession) {
+                    const sessionDuration = now - p.last_start_time;
+                    if (sessionDuration > 1000) {
+                        history.push({
+                            start: p.last_start_time,
+                            end: now,
+                            duration: sessionDuration
+                        });
+                        computedElapsed += sessionDuration;
+                        newLastStart = now;
+                        historyChanged = true;
+                    }
+                }
             }
+
+            if (p.elapsed !== computedElapsed || historyChanged) {
+                updatedProjects.push({
+                    id: p.id,
+                    history: history,
+                    elapsed: computedElapsed,
+                    last_start_time: newLastStart
+                });
+            }
+
             return {
                 ...p,
                 subName: p.sub_name,
                 history: history,
                 elapsed: computedElapsed,
-                lastStartTime: p.last_start_time,
+                lastStartTime: newLastStart,
                 isRunning: p.is_running
             };
         });
 
-        const now = Date.now();
+        if (updatedProjects.length > 0) {
+            const updatePromises = updatedProjects.map(up =>
+                sb.from('tempozio').update({
+                    history: up.history,
+                    elapsed: up.elapsed,
+                    last_start_time: up.last_start_time
+                }).eq('id', up.id)
+            );
+            await Promise.allSettled(updatePromises).catch(console.error);
+        }
+
         for (const p of projects) {
             if (p.isRunning && !p.lastStartTime) {
                 p.lastStartTime = now;
@@ -1364,6 +1405,9 @@ Version: 0.0.0
     function startTicker() {
         if (tickerInterval) clearInterval(tickerInterval);
         tickerInterval = setInterval(updateRunningTimers, 1000);
+
+        if (window.syncInterval) clearInterval(window.syncInterval);
+        window.syncInterval = setInterval(syncRunningProjectsFromServer, 10000);
     }
 
     function updateRunningTimers() {
@@ -1628,6 +1672,81 @@ Version: 0.0.0
         }
     });
 
+    async function saveRunningSessionsBeforeUnload() {
+        const runningProjects = projects.filter(p => p.isRunning && p.lastStartTime);
+        if (runningProjects.length === 0) return;
+
+        const now = Date.now();
+        const updatePromises = runningProjects.map(async (p) => {
+            const duration = now - p.lastStartTime;
+            p.history.push({ start: p.lastStartTime, end: now, duration });
+            p.elapsed += duration;
+            p.lastStartTime = now;
+
+            const body = JSON.stringify({
+                history: p.history,
+                elapsed: p.elapsed,
+                last_start_time: now
+            });
+
+            try {
+                await fetch(
+                    `https://vzqicidepdmraygulrey.supabase.co/rest/v1/tempozio?id=eq.${p.id}`,
+                    {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body,
+                        keepalive: true
+                    }
+                );
+            } catch (e) {
+                console.error('Auto-save session failed', e);
+            }
+        });
+
+        return Promise.allSettled(updatePromises);
+    }
+
+    window.addEventListener('beforeunload', (event) => {
+        saveRunningSessionsBeforeUnload();
+    });
+
+    async function syncRunningProjectsFromServer() {
+        if (!currentUser) return;
+        const runningLocal = projects.filter(p => p.isRunning);
+        if (runningLocal.length === 0) return;
+
+        const { data, error } = await sb
+            .from('tempozio')
+            .select('id, is_running, last_start_time, history, elapsed')
+            .in('id', runningLocal.map(p => p.id));
+
+        if (error || !data) return;
+
+        data.forEach(remote => {
+            const local = projects.find(p => p.id === remote.id);
+            if (!local) return;
+
+            if (!remote.is_running && local.isRunning) {
+                if (local.lastStartTime) {
+                    const duration = Date.now() - local.lastStartTime;
+                    const alreadySaved = remote.history.some(s => s.start === local.lastStartTime);
+                    if (!alreadySaved && duration > 0) {
+                        local.history.push({ start: local.lastStartTime, end: Date.now(), duration });
+                        local.elapsed += duration;
+                    }
+                }
+                local.isRunning = false;
+                local.lastStartTime = null;
+                render();
+            }
+        });
+    }
+
     // Start everything once DOM is ready
     document.addEventListener('DOMContentLoaded', async () => {
         setupAuthListeners();
@@ -1638,4 +1757,5 @@ Version: 0.0.0
         });
         await restoreSession();
     });
+
 })();

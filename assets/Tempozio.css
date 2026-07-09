@@ -1141,5 +1141,40 @@ input[type="text"]::placeholder { color: var(--muted); }
         margin-top: 8px;
         max-width: 100%;
     }
+
+    .weekly-mini-projects {
+        flex-direction: column;
+        align-items: flex-start;
+        overflow-y: auto;
+        max-height: 320px;
+        gap: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .weekly-mini-projects::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mini-project-card {
+        min-width: auto;
+        max-width: none;
+        width: auto;
+        flex: 0 0 auto;
+        background: transparent;
+        border: none;
+        outline: none;
+        box-shadow: none;
+        padding: 7px 0;
+        margin: 0;
+    }
+
+    .mini-project-card:not(:last-child)::after {
+        display: none;
+    }
     
 }
