@@ -102,6 +102,97 @@ body {
     50% { opacity: 1; box-shadow: 0 0 calc(var(--loader-dot-size) * 0.75) var(--accent); }
 }
 
+/*
+  ****************************************************
+  *  Custom Scrollbar Styles
+  *  Only affects the scrollbar thumb – no page-level hovers
+  ****************************************************
+*/
+
+/* ===== CSS Variables (override these in your theme) ===== */
+:root {
+  --scrollbar-width: 6px;
+  --scrollbar-track-color: transparent;
+  --scrollbar-thumb-color: rgba(255, 255, 255, 0.08); /* subtle, barely visible */
+  --scrollbar-accent-color: var(--accent, #4ecdc4); /* accent color with fallback */
+  --scrollbar-border-radius: 3px;
+  --scrollbar-transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ============================================================
+   WEBKIT BROWSERS (Chrome, Edge, Safari, Opera)
+   ============================================================ */
+
+/* ----- Scrollbar dimensions ----- */
+::-webkit-scrollbar {
+  width: var(--scrollbar-width, 6px);
+  height: var(--scrollbar-width, 6px);
+}
+
+/* ----- Track: fully transparent ----- */
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track-color, transparent);
+}
+
+/* ----- Thumb: normal state (very subtle) ----- */
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb-color, rgba(255, 255, 255, 0.08));
+  border-radius: var(--scrollbar-border-radius, 3px);
+  transition: var(--scrollbar-transition, background-color 0.2s ease);
+}
+
+/* ----- Thumb: hover (only when mouse is directly over the thumb) ----- */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-accent-color, #4ecdc4);
+  box-shadow: 0 0 6px var(--scrollbar-accent-color, #4ecdc4);
+}
+
+/* ----- Thumb: active (clicking/dragging the thumb) ----- */
+::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-accent-color, #4ecdc4);
+  box-shadow: 0 0 8px var(--scrollbar-accent-color, #4ecdc4);
+}
+
+/* ============================================================
+   FIREFOX
+   ============================================================ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-color, rgba(255, 255, 255, 0.08))
+                   var(--scrollbar-track-color, transparent);
+}
+
+/* 
+   NOTE: Firefox does not support :hover or :active on scrollbar parts.
+   The color will remain the normal subtle color.
+   If you want a different Firefox experience, you'd need to use JavaScript.
+*/
+
+/* ============================================================
+   FALLBACK for older browsers without custom properties
+   ============================================================ */
+@supports not (--custom-property: value) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover,
+  ::-webkit-scrollbar-thumb:active {
+    background: #4ecdc4;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  }
+}
 /* ------------------------- MODALS (BASE) ------------------------- */
 body.modal-open { overflow: hidden; }
 
