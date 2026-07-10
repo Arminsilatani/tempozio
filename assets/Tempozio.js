@@ -917,33 +917,36 @@ Version: 0.0.0
         const now = Date.now();
 
         if (project.isRunning) {
-            // Stop the running project
             const sessionDuration = now - project.lastStartTime;
             project.history.push({ start: project.lastStartTime, end: now, duration: sessionDuration });
-            project.elapsed += sessionDuration;
             project.isRunning = false;
             project.lastStartTime = null;
+
+            project.elapsed = project.history.reduce((sum, s) => sum + (s.duration || 0), 0);
         } else {
-            // Before starting this project, stop any other running project
             for (const p of projects) {
                 if (p.id !== id && p.isRunning) {
                     const sessionDuration = now - p.lastStartTime;
                     p.history.push({ start: p.lastStartTime, end: now, duration: sessionDuration });
-                    p.elapsed += sessionDuration;
+                    p.elapsed = p.history.reduce((sum, s) => sum + (s.duration || 0), 0);
                     p.isRunning = false;
                     p.lastStartTime = null;
                     await updateProjectInDB(p);
                 }
             }
-            // Now start the selected project
             project.isRunning = true;
             project.lastStartTime = now;
+            project.elapsed = project.history.reduce((sum, s) => sum + (s.duration || 0), 0);
         }
 
         showGlobalLoader();
         await updateProjectInDB(project);
         hideGlobalLoader();
+
         render();
+
+        const timeEl = document.getElementById(`time-${project.id}`);
+        if (timeEl) timeEl.textContent = formatTime(getDisplayElapsed(project));
 
         if (currentModalProjectId === id) refreshModalContent(project);
     }
@@ -1212,13 +1215,12 @@ Version: 0.0.0
 
         const projectsWithActivity = projects.map(p => {
             let lastActivity = 0;
-            if (p.history && p.history.length > 0) {
+            if (p.isRunning) {
+                lastActivity = Date.now();
+            } else if (p.history && p.history.length > 0) {
                 lastActivity = Math.max(...p.history.map(h => h.start));
             } else if (p.created_at) {
                 lastActivity = new Date(p.created_at).getTime();
-            }
-            if (p.isRunning) {
-                lastActivity = Date.now();
             }
             return { ...p, lastActivity };
         });
@@ -1302,6 +1304,8 @@ Version: 0.0.0
 
         projects.sort((a, b) => b._lastActivity - a._lastActivity);
 
+        const visibleProjects = projects.slice(0, 4);
+
         if (projects.length === 0) {
             elements.emptyState.style.display = 'flex';
             elements.carousel.style.display = 'none';
@@ -1313,7 +1317,7 @@ Version: 0.0.0
 
         elements.track.innerHTML = '';
 
-        projects.forEach(project => {
+        visibleProjects.forEach(project => {
             const curr = getDisplayElapsed(project);
             const card = document.createElement('div');
             card.className = `project-card ${project.isRunning ? 'running' : ''}`;
@@ -1395,7 +1399,9 @@ Version: 0.0.0
             drawWeeklyChart(project, chartDiv);
         });
 
-        updateArrowVisibility();
+        if (elements.arrowLeft) elements.arrowLeft.classList.add('hidden');
+        if (elements.arrowRight) elements.arrowRight.classList.add('hidden');
+
         updateCategorySuggestions();
         updateDashboard();
         updateWeeklyMiniProjects();
@@ -1677,7 +1683,7 @@ Version: 0.0.0
         if (runningProjects.length === 0) return;
 
         const now = Date.now();
-        const updatePromises = runningProjects.map(async (p) => {
+        for (const p of runningProjects) {
             const duration = now - p.lastStartTime;
             p.history.push({ start: p.lastStartTime, end: now, duration });
             p.elapsed += duration;
@@ -1689,26 +1695,12 @@ Version: 0.0.0
                 last_start_time: now
             });
 
-            try {
-                await fetch(
-                    `https://vzqicidepdmraygulrey.supabase.co/rest/v1/tempozio?id=eq.${p.id}`,
-                    {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': SUPABASE_ANON_KEY,
-                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                        },
-                        body,
-                        keepalive: true
-                    }
-                );
-            } catch (e) {
-                console.error('Auto-save session failed', e);
-            }
-        });
-
-        return Promise.allSettled(updatePromises);
+            const blob = new Blob([body], { type: 'application/json' });
+            navigator.sendBeacon(
+                `https://vzqicidepdmraygulrey.supabase.co/rest/v1/tempozio?id=eq.${p.id}`,
+                blob
+            );
+        }
     }
 
     window.addEventListener('beforeunload', (event) => {
