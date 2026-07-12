@@ -1,6 +1,6 @@
 /*
 Author: Armin Silatani
-Date: 2026-07-08
+Date: 2026-07-12
 Version: 0.0.0
 */
 
@@ -161,12 +161,6 @@ body {
   scrollbar-color: var(--scrollbar-thumb-color, rgba(255, 255, 255, 0.08))
                    var(--scrollbar-track-color, transparent);
 }
-
-/* 
-   NOTE: Firefox does not support :hover or :active on scrollbar parts.
-   The color will remain the normal subtle color.
-   If you want a different Firefox experience, you'd need to use JavaScript.
-*/
 
 /* ============================================================
    FALLBACK for older browsers without custom properties
@@ -1179,9 +1173,9 @@ input[type="text"]::placeholder { color: var(--muted); }
     }
 
     .project-card {
-        width: calc((100% - 3 * 24px) / 4);
+        width: calc((100% - 24px) / 2);
         aspect-ratio: auto;
-        min-height: 140px;
+        min-height: 150px;
     }
 
     .overview-dashboard {

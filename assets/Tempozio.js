@@ -1,6 +1,6 @@
 /*
 Author: Armin Silatani
-Date: 2026-07-08
+Date: 2026-07-12
 Version: 0.0.0
 */
 
@@ -646,20 +646,25 @@ Version: 0.0.0
             let historyChanged = false;
 
             if (p.is_running && p.last_start_time) {
-                const hasCurrentSession = history.some(s => s.start === p.last_start_time && !s.end);
-                if (!hasCurrentSession) {
-                    const sessionDuration = now - p.last_start_time;
-                    if (sessionDuration > 1000) {
+                const oldStart = p.last_start_time;
+                let cursor = oldStart;
+                while (cursor < now) {
+                    const dayEnd = new Date(cursor);
+                    dayEnd.setHours(24, 0, 0, 0);
+                    const segmentEnd = Math.min(dayEnd.getTime(), now);
+                    const duration = segmentEnd - cursor;
+                    if (duration > 1000) {
                         history.push({
-                            start: p.last_start_time,
-                            end: now,
-                            duration: sessionDuration
+                            start: cursor,
+                            end: segmentEnd,
+                            duration: duration
                         });
-                        computedElapsed += sessionDuration;
-                        newLastStart = now;
-                        historyChanged = true;
+                        computedElapsed += duration;
                     }
+                    cursor = segmentEnd;
                 }
+                newLastStart = now;
+                historyChanged = true;
             }
 
             if (p.elapsed !== computedElapsed || historyChanged) {
@@ -909,6 +914,34 @@ Version: 0.0.0
         if (timeEl) timeEl.textContent = formatTime(getDisplayElapsed(project));
     }
 
+    function updateSingleCardUI(project) {
+        const card = document.querySelector(`.project-card[data-id="${project.id}"]`);
+        if (!card) return;
+
+        card.classList.toggle('running', project.isRunning);
+
+        let dot = card.querySelector('.neon-dot');
+        if (project.isRunning) {
+            if (!dot) {
+                dot = document.createElement('div');
+                dot.className = 'neon-dot blinking';
+                card.prepend(dot); // یا append در ابتدا
+            }
+        } else {
+            if (dot) dot.remove();
+        }
+
+        const timeEl = card.querySelector('.card-time');
+        if (timeEl) {
+            timeEl.textContent = formatTime(getDisplayElapsed(project));
+        }
+
+        const chartDiv = card.querySelector('.card-chart');
+        if (chartDiv) {
+            drawWeeklyChart(project, chartDiv);
+        }
+    }
+
     /* ------------------------- TIMER LOGIC ------------------------- */
     async function toggleTimer(id) {
         const project = projects.find(p => p.id === id);
@@ -921,7 +954,6 @@ Version: 0.0.0
             project.history.push({ start: project.lastStartTime, end: now, duration: sessionDuration });
             project.isRunning = false;
             project.lastStartTime = null;
-
             project.elapsed = project.history.reduce((sum, s) => sum + (s.duration || 0), 0);
         } else {
             for (const p of projects) {
@@ -932,6 +964,7 @@ Version: 0.0.0
                     p.isRunning = false;
                     p.lastStartTime = null;
                     await updateProjectInDB(p);
+                    updateSingleCardUI(p);
                 }
             }
             project.isRunning = true;
@@ -943,12 +976,13 @@ Version: 0.0.0
         await updateProjectInDB(project);
         hideGlobalLoader();
 
-        render();
-
-        const timeEl = document.getElementById(`time-${project.id}`);
-        if (timeEl) timeEl.textContent = formatTime(getDisplayElapsed(project));
+        updateSingleCardUI(project);
 
         if (currentModalProjectId === id) refreshModalContent(project);
+
+        updateDashboard();
+        updateWeeklyMiniProjects();
+        updateSidebarProjects();
     }
 
     async function deleteProject(id) {
@@ -1072,20 +1106,24 @@ Version: 0.0.0
 
         const changeEl = document.getElementById('weekly-change');
         if (changeEl) {
-            let changePercent = 0;
-            if (totalLastWeek > 0) {
-                changePercent = Math.round(((totalThisWeek - totalLastWeek) / totalLastWeek) * 100);
-            } else if (totalThisWeek > 0) {
-                changePercent = 100;
-            }
-            let arrow = changePercent > 0 ? '▲' : (changePercent < 0 ? '▼' : '');
-            changeEl.innerHTML = `<span class="weekly-change-arrow">${arrow}</span> <span class="weekly-change-value">${Math.abs(changePercent)}%</span> <span class="weekly-change-label">vs last week</span>`;
-            changeEl.classList.remove('positive', 'negative');
-            if (changePercent > 0) changeEl.classList.add('positive');
-            else if (changePercent < 0) changeEl.classList.add('negative');
-        }
+            const totalBothWeeks = totalThisWeek + totalLastWeek;
+            let ratioPercent = 50;
 
-        const maxDailyMs = Math.max(...dailyTotalsThis, 1);
+            if (totalBothWeeks > 0) {
+                ratioPercent = Math.round((totalThisWeek / totalBothWeeks) * 100);
+            }
+
+            let arrow = '';
+            if (ratioPercent > 50) arrow = '▲';
+            else if (ratioPercent < 50) arrow = '▼';
+
+            changeEl.innerHTML = `<span class="weekly-change-arrow">${arrow}</span> <span class="weekly-change-value">${ratioPercent}%</span> <span class="weekly-change-label">vs last week</span>`;
+
+            changeEl.classList.remove('positive', 'negative');
+            if (ratioPercent > 50) changeEl.classList.add('positive');
+            else if (ratioPercent < 50) changeEl.classList.add('negative');
+        }
+                const maxDailyMs = Math.max(...dailyTotalsThis, 1);
         const maxHours = Math.ceil(maxDailyMs / 3600000);
         const chartMaxMs = maxHours * 3600000;
         const maxBarY = 85;
