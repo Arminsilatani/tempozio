@@ -428,132 +428,142 @@
     }
 
     function setupAuthListeners() {
-        document.getElementById('auth-continue-btn').addEventListener('click', async () => {
-            const email = document.getElementById('auth-email').value.trim();
-            const errorEl = document.getElementById('auth-error-1');
-            errorEl.classList.add('hidden');
-            if (!email) {
-                errorEl.textContent = 'Please enter your email.';
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                errorEl.textContent = 'Please enter a valid email.';
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            const exists = await checkEmailExists(email);
-            if (exists) {
-                document.getElementById('login-email-display').textContent = email;
-                showAuthStep('step-2-login');
-            } else {
-                document.getElementById('register-email-display').value = email;
-                showAuthStep('step-2-register');
-            }
-        });
+    // Continue – همیشه به مرحلهٔ ورود می‌رود (دیگر checkEmailExists صدا زده نمی‌شود)
+    document.getElementById('auth-continue-btn').addEventListener('click', () => {
+        const email = document.getElementById('auth-email').value.trim();
+        const errorEl = document.getElementById('auth-error-1');
+        errorEl.classList.add('hidden');
+        if (!email) {
+            errorEl.textContent = 'Please enter your email.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            errorEl.textContent = 'Please enter a valid email.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        // مستقیماً به مرحلهٔ ورود برو
+        document.getElementById('login-email-display').textContent = email;
+        showAuthStep('step-2-login');
+    });
 
-        document.getElementById('auth-signin-btn').addEventListener('click', async () => {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password-login').value;
-            const errorEl = document.getElementById('auth-error-login');
-            errorEl.classList.add('hidden');
-            if (!password) {
-                errorEl.textContent = 'Password required.';
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            const { data, error } = await sb.auth.signInWithPassword({ email, password });
-            if (error) {
-                errorEl.textContent = error.message;
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            const profile = await buildCurrentProfile(data.user);
-            if (!hasMinRole(profile.role)) {
-                await sb.auth.signOut();
-                showAccessDenied('Access denied. Your role is not sufficient.');
-                closeModal(document.getElementById('auth-overlay'));
-                return;
-            }
-            currentUser = data.user;
-            currentProfile = profile;
-            currentUserRole = profile.role;
-            closeModal(document.getElementById('auth-overlay'));
-            syncSidebarComponent();
-        });
-
-        document.getElementById('auth-register-btn').addEventListener('click', async () => {
-            const email = document.getElementById('auth-email').value.trim();
-            const firstName = document.getElementById('auth-first-name').value.trim();
-            const lastName = document.getElementById('auth-last-name').value.trim();
-            const password = document.getElementById('auth-password-register').value;
-            const confirm = document.getElementById('auth-confirm-password').value;
-            const errorEl = document.getElementById('auth-error-register');
-            errorEl.classList.add('hidden');
-            if (!firstName || !lastName) {
-                errorEl.textContent = 'First and last name required.';
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            if (password.length < 6) {
-                errorEl.textContent = 'Password min 6 characters.';
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            if (password !== confirm) {
-                errorEl.textContent = 'Passwords do not match.';
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            const { error } = await sb.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: { first_name: firstName, last_name: lastName },
-                    emailRedirectTo: window.location.origin + window.location.pathname
-                }
-            });
-            if (error) {
-                errorEl.textContent = error.message;
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            alert('Registration successful! Check your email.');
-            closeModal(document.getElementById('auth-overlay'));
-        });
-
-        document.getElementById('auth-back-to-email').addEventListener('click', () => showAuthStep('step-1'));
-        document.getElementById('auth-back-to-email-2').addEventListener('click', () => showAuthStep('step-1'));
-
-        document.getElementById('forgot-link').addEventListener('click', (e) => {
+    // لینک ثبت‌نام (اگر در HTML اضافه شده باشد)
+    const registerLink = document.getElementById('register-instead-link');
+    if (registerLink) {
+        registerLink.addEventListener('click', (e) => {
             e.preventDefault();
-            showAuthStep('step-forgot');
+            document.getElementById('register-email-display').value = document.getElementById('auth-email').value.trim();
+            showAuthStep('step-2-register');
         });
-
-        document.getElementById('auth-reset-btn').addEventListener('click', async () => {
-            const email = document.getElementById('forgot-email').value.trim();
-            const msgEl = document.getElementById('forgot-message');
-            msgEl.classList.add('hidden');
-            if (!email) {
-                msgEl.textContent = 'Please enter your email.';
-                msgEl.classList.remove('hidden');
-                return;
-            }
-            const { error } = await sb.auth.resetPasswordForEmail(email, {
-                redirectTo: window.location.origin + window.location.pathname
-            });
-            msgEl.classList.remove('hidden');
-            if (error) {
-                msgEl.textContent = error.message;
-                msgEl.style.color = 'var(--error)';
-            } else {
-                msgEl.textContent = 'Reset link sent! Check your email.';
-                msgEl.style.color = 'var(--accent)';
-            }
-        });
-
-        document.getElementById('auth-back-to-login').addEventListener('click', () => showAuthStep('step-2-login'));
     }
+
+    // Sign In
+    document.getElementById('auth-signin-btn').addEventListener('click', async () => {
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password-login').value;
+        const errorEl = document.getElementById('auth-error-login');
+        errorEl.classList.add('hidden');
+        if (!password) {
+            errorEl.textContent = 'Password required.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        const profile = await buildCurrentProfile(data.user);
+        if (!hasMinRole(profile.role)) {
+            await sb.auth.signOut();
+            showAccessDenied('Access denied. Your role is not sufficient.');
+            closeModal(document.getElementById('auth-overlay'));
+            return;
+        }
+        currentUser = data.user;
+        currentProfile = profile;
+        currentUserRole = profile.role;
+        closeModal(document.getElementById('auth-overlay'));
+        syncSidebarComponent();
+    });
+
+    // Register
+    document.getElementById('auth-register-btn').addEventListener('click', async () => {
+        const email = document.getElementById('auth-email').value.trim();
+        const firstName = document.getElementById('auth-first-name').value.trim();
+        const lastName = document.getElementById('auth-last-name').value.trim();
+        const password = document.getElementById('auth-password-register').value;
+        const confirm = document.getElementById('auth-confirm-password').value;
+        const errorEl = document.getElementById('auth-error-register');
+        errorEl.classList.add('hidden');
+        if (!firstName || !lastName) {
+            errorEl.textContent = 'First and last name required.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        if (password.length < 6) {
+            errorEl.textContent = 'Password min 6 characters.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        if (password !== confirm) {
+            errorEl.textContent = 'Passwords do not match.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        const { error } = await sb.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { first_name: firstName, last_name: lastName },
+                emailRedirectTo: window.location.origin + window.location.pathname
+            }
+        });
+        if (error) {
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        alert('Registration successful! Check your email.');
+        closeModal(document.getElementById('auth-overlay'));
+    });
+
+    // Back buttons
+    document.getElementById('auth-back-to-email').addEventListener('click', () => showAuthStep('step-1'));
+    document.getElementById('auth-back-to-email-2').addEventListener('click', () => showAuthStep('step-1'));
+
+    // Forgot password
+    document.getElementById('forgot-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        showAuthStep('step-forgot');
+    });
+
+    document.getElementById('auth-reset-btn').addEventListener('click', async () => {
+        const email = document.getElementById('forgot-email').value.trim();
+        const msgEl = document.getElementById('forgot-message');
+        msgEl.classList.add('hidden');
+        if (!email) {
+            msgEl.textContent = 'Please enter your email.';
+            msgEl.classList.remove('hidden');
+            return;
+        }
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + window.location.pathname
+        });
+        msgEl.classList.remove('hidden');
+        if (error) {
+            msgEl.textContent = error.message;
+            msgEl.style.color = 'var(--error)';
+        } else {
+            msgEl.textContent = 'Reset link sent! Check your email.';
+            msgEl.style.color = 'var(--accent)';
+        }
+    });
+
+    document.getElementById('auth-back-to-login').addEventListener('click', () => showAuthStep('step-2-login'));
+}
 
     /* :::::::::::::::::::::::::: SIDEBAR & UI HELPERS :::::::::::::::::::::::::: */
     function initSidebarListeners() {
