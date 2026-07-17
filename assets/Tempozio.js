@@ -1,15 +1,7 @@
-/*
-Author: Armin Silatani
-Date: 2026-07-12
-Version: 0.0.0
-*/
-
-/* =========================== TEMPOZIO MAIN SCRIPT ============================ */
-
 (function() {
     'use strict';
 
-    /* ------------------------- CONFIGURATION & CONSTANTS ------------------------- */
+    /* :::::::::::::::::::::::::: CONFIGURATION & CONSTANTS :::::::::::::::::::::::::: */
     const SUPABASE_URL = 'https://vzqicidepdmraygulrey.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_kqRWgOmLISOE2EuLL1s8fw_WN6FJRTI';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -40,7 +32,7 @@ Version: 0.0.0
         }
     ];
 
-    /* ------------------------- GLOBAL STATE ------------------------- */
+    /* :::::::::::::::::::::::::: GLOBAL STATE :::::::::::::::::::::::::: */
     let currentUser = null;
     let currentProfile = null;
     let currentUserRole = 'public';
@@ -55,7 +47,7 @@ Version: 0.0.0
     let cropperInstance = null;
     let currentCropCallback = null;
 
-    /* ------------------------- ACCESS CONTROL ------------------------- */
+    /* :::::::::::::::::::::::::: ACCESS CONTROL :::::::::::::::::::::::::: */
     function hasMinRole(userRole) {
         const normalized = String(userRole || '').trim().toLowerCase();
         const userIndex = ROLE_HIERARCHY.indexOf(normalized);
@@ -80,7 +72,7 @@ Version: 0.0.0
             border-radius: 16px;
             padding: 32px 40px;
             text-align: center;
-            color: #fff;
+            color: #FFF;
             font-family: inherit;
             font-size: 16px;
             max-width: 400px;
@@ -90,7 +82,7 @@ Version: 0.0.0
         `;
         box.innerHTML = `
             <div style="margin-bottom:12px; display:flex; justify-content:center;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:40px; height:40px; color: var(--accent, #ff6f91);">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:40px; height:40px; color: var(--accent, #FF6F91);">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
                 </svg>
             </div>
@@ -109,7 +101,7 @@ Version: 0.0.0
         }
     }
 
-    /* ------------------------- DOM REFERENCES ------------------------- */
+    /* :::::::::::::::::::::::::: DOM REFERENCES :::::::::::::::::::::::::: */
     const elements = {
         loader: document.getElementById('initial-loader'),
         authOverlay: document.getElementById('auth-overlay'),
@@ -125,7 +117,7 @@ Version: 0.0.0
         breakdownList: document.getElementById('breakdown-list')
     };
 
-    /* ------------------------- UTILITY FUNCTIONS ------------------------- */
+    /* :::::::::::::::::::::::::: UTILITY FUNCTIONS :::::::::::::::::::::::::: */
     function showGlobalLoader() {
         const loader = document.getElementById('initial-loader');
         if (loader) loader.classList.remove('hidden');
@@ -198,7 +190,7 @@ Version: 0.0.0
         return project.elapsed + (Date.now() - project.lastStartTime);
     }
 
-    /* ------------------------- IMAGE CROPPER HELPERS ------------------------- */
+    /* :::::::::::::::::::::::::: IMAGE CROPPER HELPERS :::::::::::::::::::::::::: */
     function openCropperModal(file, callback) {
         const modal = document.getElementById('crop-modal');
         const img = document.getElementById('crop-image');
@@ -247,7 +239,7 @@ Version: 0.0.0
         });
     }
 
-    /* ------------------------- CATEGORY MANAGEMENT ------------------------- */
+    /* :::::::::::::::::::::::::: CATEGORY MANAGEMENT :::::::::::::::::::::::::: */
     function initCategoryDropdown(containerId, hiddenInputId, initialValues = []) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -387,172 +379,206 @@ Version: 0.0.0
         });
     }
 
-    /* ------------------------- AUTHENTICATION & SESSION ------------------------- */
+    /* :::::::::::::::::::::::::: AUTH FUNCTIONS :::::::::::::::::::::::::: */
+    async function checkEmailExists(email) {
+        const { data } = await sb
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+        return !!data;
+    }
+
     async function buildCurrentProfile(user) {
-        const { data } = await sb.from('profiles').select('*').eq('id', user.id).single();
+        const { data: profile } = await sb
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
         const md = user.user_metadata || {};
         return {
             id: user.id,
-            first_name: data?.first_name ?? md.first_name ?? '',
-            last_name: data?.last_name ?? md.last_name ?? '',
-            photo_url: data?.photo_url ?? md.photo_url ?? '',
-            username: data?.username ?? md.username ?? '',
-            role: data?.role ?? md.role ?? 'recruit'
+            first_name: profile?.first_name ?? md.first_name ?? '',
+            last_name: profile?.last_name ?? md.last_name ?? '',
+            photo_url: profile?.photo_url ?? md.photo_url ?? '',
+            username: profile?.username ?? md.username ?? '',
+            role: profile?.role ?? md.role ?? 'recruit'
         };
     }
 
-    async function restoreSession() {
-        showGlobalLoader();
-        const urlParams = new URLSearchParams(window.location.search);
-        const accessToken = urlParams.get('access_token');
-        const refreshToken = urlParams.get('refresh_token');
-        if (accessToken && refreshToken) {
-            try {
-                await sb.auth.setSession({ access_token, refresh_token });
-                window.history.replaceState({}, document.title, window.location.pathname);
-            } catch (e) {}
-        }
-        const { data: { session } } = await sb.auth.getSession();
-        if (session?.user) {
-            currentUser = session.user;
-            currentProfile = await buildCurrentProfile(currentUser);
-            currentUserRole = currentProfile?.role || 'recruit';
-            if (!hasMinRole(currentUserRole)) {
-                await sb.auth.signOut();
-                currentUser = null;
-                currentProfile = null;
-                currentUserRole = 'public';
-                closeModal(elements.authOverlay);
-                showAccessDenied('Access denied. You need at least commander to use Tempozio.');
-                return;
-            }
-            elements.appContainer.classList.remove('app-hidden');
-            closeModal(elements.authOverlay);
-            syncSidebarComponent();
-            initTempozio();
-        } else {
-            elements.appContainer.classList.add('app-hidden');
-            openModal(elements.authOverlay);
-            showStep('step-1');
-        }
-        hideGlobalLoader();
+    function showAuthStep(stepId) {
+        document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('auth-step--active'));
+        document.getElementById(stepId).classList.add('auth-step--active');
     }
 
-    function showStep(stepId) {
-        document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
-        document.getElementById(stepId).classList.add('active');
+    async function authRestoreSession() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session?.user) {
+            const profile = await buildCurrentProfile(session.user);
+            if (!hasMinRole(profile.role)) {
+                await sb.auth.signOut();
+                showAccessDenied('Access denied. Your role is not sufficient.');
+                return;
+            }
+            currentUser = session.user;
+            currentProfile = profile;
+            currentUserRole = profile.role;
+            syncSidebarComponent();
+        }
     }
 
     function setupAuthListeners() {
-        document.getElementById('auth-continue-btn').addEventListener('click', () => {
+        document.getElementById('auth-continue-btn').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value.trim();
+            const errorEl = document.getElementById('auth-error-1');
+            errorEl.classList.add('hidden');
             if (!email) {
-                document.getElementById('auth-error-1').style.display = 'block';
-                document.getElementById('auth-error-1').textContent = 'Please enter your email.';
+                errorEl.textContent = 'Please enter your email.';
+                errorEl.classList.remove('hidden');
                 return;
             }
-            document.getElementById('login-email-display').textContent = email;
-            document.getElementById('register-email-display').textContent = email;
-            showStep('step-2-login');
-            document.getElementById('auth-error-1').style.display = 'none';
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                errorEl.textContent = 'Please enter a valid email.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            const exists = await checkEmailExists(email);
+            if (exists) {
+                document.getElementById('login-email-display').textContent = email;
+                showAuthStep('step-2-login');
+            } else {
+                document.getElementById('register-email-display').value = email;
+                showAuthStep('step-2-register');
+            }
         });
 
         document.getElementById('auth-signin-btn').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value.trim();
-            const pw = document.getElementById('auth-password-login').value;
-            document.getElementById('auth-error-login').style.display = 'none';
-            showGlobalLoader();
-            const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
-            hideGlobalLoader();
+            const password = document.getElementById('auth-password-login').value;
+            const errorEl = document.getElementById('auth-error-login');
+            errorEl.classList.add('hidden');
+            if (!password) {
+                errorEl.textContent = 'Password required.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            const { data, error } = await sb.auth.signInWithPassword({ email, password });
             if (error) {
-                document.getElementById('auth-error-login').textContent = error.message;
-                document.getElementById('auth-error-login').style.display = 'block';
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            const profile = await buildCurrentProfile(data.user);
+            if (!hasMinRole(profile.role)) {
+                await sb.auth.signOut();
+                showAccessDenied('Access denied. Your role is not sufficient.');
+                closeModal(document.getElementById('auth-overlay'));
                 return;
             }
             currentUser = data.user;
-            currentProfile = await buildCurrentProfile(data.user);
-            currentUserRole = currentProfile?.role || 'recruit';
-            if (!hasMinRole(currentUserRole)) {
-                await sb.auth.signOut();
-                currentUser = null;
-                currentProfile = null;
-                currentUserRole = 'public';
-                closeModal(elements.authOverlay);
-                showAccessDenied('Access denied. You need at least commander role to use Tempozio.');
-                return;
-            }
-            closeModal(elements.authOverlay);
-            elements.appContainer.classList.remove('app-hidden');
+            currentProfile = profile;
+            currentUserRole = profile.role;
+            closeModal(document.getElementById('auth-overlay'));
             syncSidebarComponent();
-            initTempozio();
         });
 
         document.getElementById('auth-register-btn').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value.trim();
-            const pw = document.getElementById('auth-password-register').value;
-            const fn = document.getElementById('auth-first-name').value.trim();
-            const ln = document.getElementById('auth-last-name').value.trim();
-            document.getElementById('auth-error-register').style.display = 'none';
-            if (pw.length < 6) {
-                document.getElementById('auth-error-register').textContent = 'Password must be at least 6 characters.';
-                document.getElementById('auth-error-register').style.display = 'block';
+            const firstName = document.getElementById('auth-first-name').value.trim();
+            const lastName = document.getElementById('auth-last-name').value.trim();
+            const password = document.getElementById('auth-password-register').value;
+            const confirm = document.getElementById('auth-confirm-password').value;
+            const errorEl = document.getElementById('auth-error-register');
+            errorEl.classList.add('hidden');
+            if (!firstName || !lastName) {
+                errorEl.textContent = 'First and last name required.';
+                errorEl.classList.remove('hidden');
                 return;
             }
-            showGlobalLoader();
+            if (password.length < 6) {
+                errorEl.textContent = 'Password min 6 characters.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            if (password !== confirm) {
+                errorEl.textContent = 'Passwords do not match.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
             const { error } = await sb.auth.signUp({
                 email,
-                password: pw,
+                password,
                 options: {
-                    data: { first_name: fn, last_name: ln },
+                    data: { first_name: firstName, last_name: lastName },
                     emailRedirectTo: window.location.origin + window.location.pathname
                 }
             });
-            hideGlobalLoader();
             if (error) {
-                document.getElementById('auth-error-register').textContent = error.message;
-                document.getElementById('auth-error-register').style.display = 'block';
+                errorEl.textContent = error.message;
+                errorEl.classList.remove('hidden');
                 return;
             }
-            alert('Registration successful! Please check your email to confirm your account.');
-            closeModal(elements.authOverlay);
+            alert('Registration successful! Check your email.');
+            closeModal(document.getElementById('auth-overlay'));
         });
 
-        document.getElementById('auth-back-to-email').addEventListener('click', () => showStep('step-1'));
-        document.getElementById('auth-back-to-email-2').addEventListener('click', () => showStep('step-2-register'));
+        document.getElementById('auth-back-to-email').addEventListener('click', () => showAuthStep('step-1'));
+        document.getElementById('auth-back-to-email-2').addEventListener('click', () => showAuthStep('step-1'));
+
         document.getElementById('forgot-link').addEventListener('click', (e) => {
             e.preventDefault();
-            showStep('step-forgot');
-            document.getElementById('forgot-email').value = document.getElementById('auth-email').value.trim();
+            showAuthStep('step-forgot');
         });
+
         document.getElementById('auth-reset-btn').addEventListener('click', async () => {
             const email = document.getElementById('forgot-email').value.trim();
-            if (!email) return;
-            showGlobalLoader();
+            const msgEl = document.getElementById('forgot-message');
+            msgEl.classList.add('hidden');
+            if (!email) {
+                msgEl.textContent = 'Please enter your email.';
+                msgEl.classList.remove('hidden');
+                return;
+            }
             const { error } = await sb.auth.resetPasswordForEmail(email, {
                 redirectTo: window.location.origin + window.location.pathname
             });
-            hideGlobalLoader();
-            const msg = document.getElementById('forgot-message');
-            msg.style.display = 'block';
+            msgEl.classList.remove('hidden');
             if (error) {
-                msg.textContent = error.message;
-                msg.style.color = '#ff5555';
+                msgEl.textContent = error.message;
+                msgEl.style.color = 'var(--error)';
             } else {
-                msg.textContent = 'Reset link sent! Check your email.';
-                msg.style.color = 'var(--accent)';
+                msgEl.textContent = 'Reset link sent! Check your email.';
+                msgEl.style.color = 'var(--accent)';
             }
         });
-        document.getElementById('auth-back-to-login').addEventListener('click', () => showStep('step-2-login'));
+
+        document.getElementById('auth-back-to-login').addEventListener('click', () => showAuthStep('step-2-login'));
     }
 
-    /* ------------------------- SIDEBAR & UI HELPERS ------------------------- */
+    /* :::::::::::::::::::::::::: SIDEBAR & UI HELPERS :::::::::::::::::::::::::: */
+    function initSidebarListeners() {
+        const sidebar = document.querySelector('sidebar-component');
+        if (!sidebar) return;
+        sidebar.addEventListener('login-request', () => {
+            document.getElementById('auth-email').value = '';
+            document.getElementById('auth-password-login').value = '';
+            document.querySelectorAll('.auth-error').forEach(el => el.classList.add('hidden'));
+            showAuthStep('step-1');
+            openModal(document.getElementById('auth-overlay'));
+        });
+
+        sidebar.addEventListener('logout-request', async () => {
+            await sb.auth.signOut();
+            currentUser = null;
+            currentProfile = null;
+            currentUserRole = 'public';
+            syncSidebarComponent();
+        });
+    }
+
     function getSidebarComponent() {
         if (!sidebarComponent) {
             sidebarComponent = document.querySelector('sidebar-component');
-            if (sidebarComponent) {
-                sidebarComponent.addEventListener('login-request', () => openModal(elements.authOverlay));
-                sidebarComponent.addEventListener('logout-request', () => logout());
-            }
         }
         return sidebarComponent;
     }
@@ -582,24 +608,7 @@ Version: 0.0.0
         comp.setNotificationDot(hasNotifications);
     }
 
-    async function logout() {
-        showGlobalLoader();
-        await sb.auth.signOut();
-        currentUser = null;
-        currentProfile = null;
-        currentUserRole = 'public';
-        syncSidebarComponent();
-        elements.appContainer.classList.add('app-hidden');
-        const auth = elements.authOverlay;
-        auth.querySelector('#auth-email').value = '';
-        auth.querySelector('#auth-password-login').value = '';
-        auth.querySelector('#auth-password-register').value = '';
-        showStep('step-1');
-        openModal(auth);
-        hideGlobalLoader();
-    }
-
-    /* ------------------------- DATABASE OPERATIONS ------------------------- */
+    /* :::::::::::::::::::::::::: DATABASE OPERATIONS :::::::::::::::::::::::::: */
     async function uploadProjectLogo(file, projectId) {
         const img = await createImageBitmap(file);
         const canvas = document.createElement('canvas');
@@ -625,6 +634,11 @@ Version: 0.0.0
     }
 
     async function loadProjects() {
+        if (!currentUser) {
+            projects = [];
+            return;
+        }
+
         const { data, error } = await sb
             .from('tempozio')
             .select('*')
@@ -739,7 +753,7 @@ Version: 0.0.0
         await deleteProjectLogo(id).catch(() => {});
     }
 
-    /* ------------------------- PROJECT MODAL ------------------------- */
+    /* :::::::::::::::::::::::::: PROJECT MODAL :::::::::::::::::::::::::: */
     function openProjectModal(projectId) {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
@@ -925,7 +939,7 @@ Version: 0.0.0
             if (!dot) {
                 dot = document.createElement('div');
                 dot.className = 'neon-dot blinking';
-                card.prepend(dot); // یا append در ابتدا
+                card.prepend(dot);
             }
         } else {
             if (dot) dot.remove();
@@ -942,7 +956,7 @@ Version: 0.0.0
         }
     }
 
-    /* ------------------------- TIMER LOGIC ------------------------- */
+    /* :::::::::::::::::::::::::: TIMER LOGIC :::::::::::::::::::::::::: */
     async function toggleTimer(id) {
         const project = projects.find(p => p.id === id);
         if (!project) return;
@@ -997,7 +1011,7 @@ Version: 0.0.0
         }
     }
 
-    /* ------------------------- DASHBOARD & CHARTS ------------------------- */
+    /* :::::::::::::::::::::::::: DASHBOARD & CHARTS :::::::::::::::::::::::::: */
     function getWeeklyDurations(project, offsetDays = 0) {
         const now = Date.now();
         const dayMs = 86400000;
@@ -1030,7 +1044,7 @@ Version: 0.0.0
         const totalDuration = durations.reduce((a, b) => a + b, 0);
         const hasData = totalDuration > 0;
         const max = Math.max(...durations, 1);
-        const color = project.color || '#a7ff3d';
+        const color = project.color || '#A7FF3D';
 
         let fillHTML = '';
         let pathHTML = '';
@@ -1123,7 +1137,8 @@ Version: 0.0.0
             if (ratioPercent > 50) changeEl.classList.add('positive');
             else if (ratioPercent < 50) changeEl.classList.add('negative');
         }
-                const maxDailyMs = Math.max(...dailyTotalsThis, 1);
+
+        const maxDailyMs = Math.max(...dailyTotalsThis, 1);
         const maxHours = Math.ceil(maxDailyMs / 3600000);
         const chartMaxMs = maxHours * 3600000;
         const maxBarY = 85;
@@ -1209,13 +1224,12 @@ Version: 0.0.0
         const last5 = projects.slice(0, 5);
         last5.sort((a, b) => getDisplayElapsed(b) - getDisplayElapsed(a));
         let html = '';
-        const circumference = 2 * Math.PI * 15;   // ≈ 94.2478
+        const circumference = 2 * Math.PI * 15;
 
         last5.forEach(p => {
             const elapsed = getDisplayElapsed(p);
             const percent = totalElapsed > 0 ? Math.round((elapsed / totalElapsed) * 100) : 0;
-            const color = p.color || '#a7ff3d';
-
+            const color = p.color || '#A7FF3D';
             const offset = circumference - (percent / 100) * circumference;
 
             html += `
@@ -1246,7 +1260,7 @@ Version: 0.0.0
         updateBreakdown();
     }
 
-    /* ------------------------- MINI PROJECTS (RECENT ACTIVITY) ------------------------- */
+    /* :::::::::::::::::::::::::: MINI PROJECTS (RECENT ACTIVITY) :::::::::::::::::::::::::: */
     function updateWeeklyMiniProjects() {
         const container = document.getElementById('weekly-mini-projects');
         if (!container) return;
@@ -1264,7 +1278,6 @@ Version: 0.0.0
         });
 
         projectsWithActivity.sort((a, b) => b.lastActivity - a.lastActivity);
-
         const latestProjects = projectsWithActivity.slice(0, 4);
 
         if (!latestProjects.length) {
@@ -1275,7 +1288,7 @@ Version: 0.0.0
         container.innerHTML = latestProjects.map(project => {
             const elapsed = getDisplayElapsed(project);
             const logoUrl = project.logo || '';
-            const color = project.color || '#a7ff3d';
+            const color = project.color || '#A7FF3D';
 
             const logoHTML = logoUrl
                 ? `<img src="${escapeHtml(logoUrl)}" alt="Logo" onerror="this.parentElement.classList.add('broken')">
@@ -1324,7 +1337,7 @@ Version: 0.0.0
         });
     }
 
-    /* ------------------------- RENDERING & TICKER ------------------------- */
+    /* :::::::::::::::::::::::::: RENDERING & TICKER :::::::::::::::::::::::::: */
     function render() {
         if (!elements.emptyState || !elements.carousel || !elements.track) return;
 
@@ -1341,7 +1354,6 @@ Version: 0.0.0
         });
 
         projects.sort((a, b) => b._lastActivity - a._lastActivity);
-
         const visibleProjects = projects.slice(0, 4);
 
         if (projects.length === 0) {
@@ -1361,7 +1373,7 @@ Version: 0.0.0
             card.className = `project-card ${project.isRunning ? 'running' : ''}`;
             card.dataset.id = project.id;
 
-            const color = project.color || '#a7ff3d';
+            const color = project.color || '#A7FF3D';
             const rgb = hexToRgb(color);
             card.style.setProperty('--project-r', rgb.r);
             card.style.setProperty('--project-g', rgb.g);
@@ -1510,7 +1522,7 @@ Version: 0.0.0
         }
 
         list.innerHTML = projects.map(project => {
-            const color = project.color || '#a7ff3d';
+            const color = project.color || '#A7FF3D';
             return `
                 <button class="sidebar-project-item" data-id="${project.id}">
                     <span class="sidebar-project-dot" style="background-color:${color};"></span>
@@ -1531,12 +1543,12 @@ Version: 0.0.0
         });
     }
 
-    /* ------------------------- NEW PROJECT MODAL ------------------------- */
+    /* :::::::::::::::::::::::::: NEW PROJECT MODAL :::::::::::::::::::::::::: */
     function openNewProjectModal() {
         document.getElementById('new-project-name').value = '';
-        document.getElementById('new-project-color').value = '#a7ff3d';
+        document.getElementById('new-project-color').value = '#A7FF3D';
         const colorPreview = document.getElementById('new-color-preview');
-        if (colorPreview) colorPreview.style.backgroundColor = '#a7ff3d';
+        if (colorPreview) colorPreview.style.backgroundColor = '#A7FF3D';
         document.getElementById('new-logo-preview').src = '';
         document.getElementById('new-logo-preview').classList.add('hidden');
         document.getElementById('project-name-preview').textContent = 'New Project';
@@ -1559,7 +1571,7 @@ Version: 0.0.0
         if (!name) { alert('Project name cannot be empty.'); return; }
 
         const colorValue = document.getElementById('new-project-color').value.trim();
-        const hexColor = /^#[0-9A-Fa-f]{6}$/.test(colorValue) ? colorValue : '#a7ff3d';
+        const hexColor = /^#[0-9A-Fa-f]{6}$/.test(colorValue) ? colorValue : '#A7FF3D';
         const projectId = generateId();
         let logoUrl = null;
 
@@ -1597,7 +1609,7 @@ Version: 0.0.0
         newProjectLogoFile = null;
     }
 
-    /* ------------------------- EVENT BINDING & INITIALIZATION ------------------------- */
+    /* :::::::::::::::::::::::::: EVENT BINDING & INITIALIZATION :::::::::::::::::::::::::: */
     function bindTempozioEvents() {
         if (elements.track) {
             elements.track.addEventListener('click', (e) => {
@@ -1701,9 +1713,11 @@ Version: 0.0.0
         render();
         startTicker();
         bindTempozioEvents();
+        hideGlobalLoader();
+        elements.appContainer.classList.remove('app-hidden');
     }
 
-    // Global modal close listeners
+    /* :::::::::::::::::::::::::: SYNC & UNLOAD :::::::::::::::::::::::::: */
     document.addEventListener('click', (e) => {
         const modal = e.target.closest('.modal');
         if (modal && e.target === modal) closeModal(modal);
@@ -1777,15 +1791,17 @@ Version: 0.0.0
         });
     }
 
-    // Start everything once DOM is ready
+    /* :::::::::::::::::::::::::: STARTUP :::::::::::::::::::::::::: */
     document.addEventListener('DOMContentLoaded', async () => {
         setupAuthListeners();
+        initSidebarListeners();
+        await authRestoreSession();
+        await initTempozio();
         setupCropListeners();
         customElements.whenDefined('sidebar-component').then(() => {
             getSidebarComponent();
             syncSidebarComponent();
         });
-        await restoreSession();
     });
 
 })();
