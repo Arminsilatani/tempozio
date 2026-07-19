@@ -276,6 +276,64 @@ body.modal-open {
     }
 }
 
+/* :::::::::::::::::::::::::: ACCESS DENIED OVERLAY :::::::::::::::::::::::::: */
+.access-denied-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.access-denied-box {
+    background: rgba(20, 20, 20, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 32px 40px;
+    text-align: center;
+    color: #FFF;
+    font-family: inherit;
+    font-size: 16px;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    transform: scale(0.9);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.access-denied-icon {
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: center;
+}
+
+.access-denied-icon svg {
+    width: 40px;
+    height: 40px;
+    color: var(--accent, #FF6F91);
+}
+
+.access-denied-message {
+    margin: 0;
+    line-height: 1.5;
+}
+#new-project-name {
+    margin-bottom: 12px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes popIn {
+    0%   { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1);   opacity: 1; }
+}
+
 /* :::::::::::::::::::::::::: HEADER & LAYOUT :::::::::::::::::::::::::: */
 .glass-header {
     background: transparent;
@@ -1785,7 +1843,7 @@ body.modal-open {
 .color-preview {
     position: absolute;
     right: 20px;
-    top: 50%;
+    top: 67%;
     transform: translateY(-112%);
     width: 14px;
     height: 14px;
@@ -1883,10 +1941,10 @@ body.modal-open {
 #sidebar-projects-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 0px;
+    margin-top: 0px;
     padding: 0 8px;
-    padding-left: 14px;
+    padding-left: 2px;
 }
 
 .sidebar-project-item {
@@ -1912,11 +1970,13 @@ body.modal-open {
     color: #FFF;
 }
 
-.sidebar-project-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+.sidebar-project-dash {
+    width: 18px;
+    height: 5px;
+    background-color: var(--dash-color, var(--accent));
     flex-shrink: 0;
+    border-radius: 50px;
+    transform: translateX(6.5px); 
 }
 
 .sidebar-project-name {
@@ -2022,12 +2082,9 @@ body.modal-open {
 }
 
 .recent-activity-title {
-    font-size: 16px;
-    font-weight: 900;
-    color: var(--text);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0 0 12px 0;
+    display: inline-block;
+    margin: 0;
+    vertical-align: middle;
 }
 
 .weekly-mini-projects {
@@ -2363,6 +2420,69 @@ body.modal-open {
     display: none;
 }
 
+.delete-history-btn {
+    background: none;
+    border: none;
+    color: var(--error, #FF6B6B);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 6px;
+    line-height: 1;
+    transition: opacity 0.2s;
+}
+.delete-history-btn:hover {
+    opacity: 0.7;
+}
+
+.recent-pagination-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 0 16px;
+    vertical-align: middle;
+}
+
+.recent-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-radius 0.5s ease,
+                background-color 0.3s ease,
+                transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+    will-change: width, border-radius, transform;
+}
+
+.recent-dot.active {
+    width: 20px;               /* طول خط تیره */
+    border-radius: 4px;        /* گوشه‌های گرد */
+    background-color: var(--accent);
+    transform: scaleX(1);       /* در حالت عادی مقیاس طبیعی */
+}
+
+.recent-dot.active {
+    animation: stretchDash 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes stretchDash {
+    0% {
+        width: 8px;
+        border-radius: 50%;
+        transform: scaleX(0.5);
+    }
+    60% {
+        transform: scaleX(1.1);
+    }
+    100% {
+        width: 20px;
+        border-radius: 4px;
+        transform: scaleX(1);
+    }
+}
+
 /* :::::::::::::::::::::::::: RESPONSIVE STYLES :::::::::::::::::::::::::: */
 @media screen and (max-width: 600px) {
     .main-content {
@@ -2428,17 +2548,58 @@ body.modal-open {
         font-size: 7px;
     }
 
+    /* Recent Activity — اسکرول عمودی در موبایل */
     .recent-activity-section {
         width: 100%;
         padding: 12px 16px;
+        overflow: visible; /* برداشتن overflow:hidden پیش‌فرض */
     }
 
     .weekly-mini-projects {
-        gap: 8px;
+        display: block;            /* flex را لغو می‌کنیم */
+        overflow-y: auto;          /* اسکرول عمودی فعال */
+        overflow-x: hidden;
+        max-height: 320px;         /* ارتفاع محدود برای اسکرول */
+        gap: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        scrollbar-width: none;     /* مخفی کردن اسکرول‌بار */
+        -ms-overflow-style: none;
+    }
+
+    .weekly-mini-projects::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mini-slider-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: none !important;
+        transform: none !important;
+    }
+
+    .recent-pagination-dots {
+        display: none !important;   /* نقطه‌های صفحه‌بندی مخفی */
     }
 
     .mini-project-card {
-        min-width: 100px;
+        min-width: auto;
+        max-width: none;
+        width: 100%;
+        flex: 0 0 auto;
+        background: transparent;
+        border: none;
+        outline: none;
+        box-shadow: none;
+        padding: 7px 0;
+        margin: 0;
+    }
+
+    .mini-project-card:not(:last-child)::after {
+        display: none;
     }
 
     .mini-name {
@@ -2489,40 +2650,5 @@ body.modal-open {
     .tool-description {
         margin-top: 8px;
         max-width: 100%;
-    }
-
-    .weekly-mini-projects {
-        flex-direction: column;
-        align-items: flex-start;
-        overflow-y: auto;
-        max-height: 320px;
-        gap: 0;
-        padding: 0;
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-
-    .weekly-mini-projects::-webkit-scrollbar {
-        display: none;
-    }
-
-    .mini-project-card {
-        min-width: auto;
-        max-width: none;
-        width: auto;
-        flex: 0 0 auto;
-        background: transparent;
-        border: none;
-        outline: none;
-        box-shadow: none;
-        padding: 7px 0;
-        margin: 0;
-    }
-
-    .mini-project-card:not(:last-child)::after {
-        display: none;
     }
 }

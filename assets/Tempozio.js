@@ -1,7 +1,6 @@
 (function() {
     'use strict';
 
-    /* :::::::::::::::::::::::::: CONFIGURATION & CONSTANTS :::::::::::::::::::::::::: */
     const SUPABASE_URL = 'https://vzqicidepdmraygulrey.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_kqRWgOmLISOE2EuLL1s8fw_WN6FJRTI';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -32,7 +31,6 @@
         }
     ];
 
-    /* :::::::::::::::::::::::::: GLOBAL STATE :::::::::::::::::::::::::: */
     let currentUser = null;
     let currentProfile = null;
     let currentUserRole = 'public';
@@ -43,11 +41,11 @@
     let editLogoFile = null;
     let currentModalProjectId = null;
     let tempozioInitDone = false;
+    let currentRecentPage = 0;
 
     let cropperInstance = null;
     let currentCropCallback = null;
 
-    /* :::::::::::::::::::::::::: ACCESS CONTROL :::::::::::::::::::::::::: */
     function hasMinRole(userRole) {
         const normalized = String(userRole || '').trim().toLowerCase();
         const userIndex = ROLE_HIERARCHY.indexOf(normalized);
@@ -56,52 +54,25 @@
     }
 
     function showAccessDenied(message = 'Access denied.') {
-        const overlay = document.createElement('div');
-        overlay.id = 'access-denied-overlay';
-        overlay.style.cssText = `
-            position: fixed; inset: 0; z-index: 10000;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(12px);
-            display: flex; align-items: center; justify-content: center;
-            animation: fadeIn 0.3s ease;
-        `;
-        const box = document.createElement('div');
-        box.style.cssText = `
-            background: rgba(20, 20, 20, 0.9);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 32px 40px;
-            text-align: center;
-            color: #FFF;
-            font-family: inherit;
-            font-size: 16px;
-            max-width: 400px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            transform: scale(0.9);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        `;
-        box.innerHTML = `
-            <div style="margin-bottom:12px; display:flex; justify-content:center;">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:40px; height:40px; color: var(--accent, #FF6F91);">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                </svg>
-            </div>
-            <p style="margin:0; line-height:1.5;">${message}</p>
-        `;
-        overlay.appendChild(box);
-        document.body.appendChild(overlay);
-        if (!document.getElementById('access-denied-styles')) {
-            const style = document.createElement('style');
-            style.id = 'access-denied-styles';
-            style.textContent = `
-                @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-                @keyframes popIn { 0% { transform: scale(0.8); opacity:0; } 100% { transform: scale(1); opacity:1; } }
-            `;
-            document.head.appendChild(style);
-        }
-    }
+    const overlay = document.createElement('div');
+    overlay.className = 'access-denied-overlay';
 
-    /* :::::::::::::::::::::::::: DOM REFERENCES :::::::::::::::::::::::::: */
+    const box = document.createElement('div');
+    box.className = 'access-denied-box';
+    box.innerHTML = `
+        <div class="access-denied-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+        </div>
+        <p class="access-denied-message">${message}</p>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+}
+
     const elements = {
         loader: document.getElementById('initial-loader'),
         authOverlay: document.getElementById('auth-overlay'),
@@ -117,7 +88,6 @@
         breakdownList: document.getElementById('breakdown-list')
     };
 
-    /* :::::::::::::::::::::::::: UTILITY FUNCTIONS :::::::::::::::::::::::::: */
     function showGlobalLoader() {
         const loader = document.getElementById('initial-loader');
         if (loader) loader.classList.remove('hidden');
@@ -166,6 +136,14 @@
         return `${pad(h)}:${pad(m)}:${pad(s)}`;
     }
 
+    function formatTimeNoSeconds(ms) {
+        const totalSeconds = Math.floor(ms / 1000);
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${pad(h)}:${pad(m)}`;
+    }
+
     function formatTimeShort(ms) {
         const totalSeconds = Math.floor(ms / 1000);
         const hours = Math.floor(totalSeconds / 3600);
@@ -181,6 +159,10 @@
         return new Date(ts).toLocaleTimeString();
     }
 
+    function formatTimeOnlyNoSeconds(ts) {
+        return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     function generateId() {
         return '_' + Math.random().toString(36).substr(2, 9);
     }
@@ -190,7 +172,6 @@
         return project.elapsed + (Date.now() - project.lastStartTime);
     }
 
-    /* :::::::::::::::::::::::::: IMAGE CROPPER HELPERS :::::::::::::::::::::::::: */
     function openCropperModal(file, callback) {
         const modal = document.getElementById('crop-modal');
         const img = document.getElementById('crop-image');
@@ -239,7 +220,6 @@
         });
     }
 
-    /* :::::::::::::::::::::::::: CATEGORY MANAGEMENT :::::::::::::::::::::::::: */
     function initCategoryDropdown(containerId, hiddenInputId, initialValues = []) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -379,7 +359,6 @@
         });
     }
 
-    /* :::::::::::::::::::::::::: AUTH FUNCTIONS :::::::::::::::::::::::::: */
     async function checkEmailExists(email) {
         const { data } = await sb
             .from('profiles')
@@ -469,7 +448,6 @@
             }
         });
 
-        // Sign In
         document.getElementById('auth-signin-btn').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value.trim();
             const password = document.getElementById('auth-password-login').value;
@@ -500,7 +478,6 @@
             syncSidebarComponent();
         });
 
-        // Register
         document.getElementById('auth-register-btn').addEventListener('click', async () => {
             const email = document.getElementById('auth-email').value.trim();
             const firstName = document.getElementById('auth-first-name').value.trim();
@@ -541,11 +518,9 @@
             closeModal(document.getElementById('auth-overlay'));
         });
 
-        // Back buttons
         document.getElementById('auth-back-to-email').addEventListener('click', () => showAuthStep('step-1'));
         document.getElementById('auth-back-to-email-2').addEventListener('click', () => showAuthStep('step-1'));
 
-        // Forgot password
         document.getElementById('forgot-link').addEventListener('click', (e) => {
             e.preventDefault();
             showAuthStep('step-forgot');
@@ -576,7 +551,6 @@
         document.getElementById('auth-back-to-login').addEventListener('click', () => showAuthStep('step-2-login'));
     }
 
-    /* :::::::::::::::::::::::::: SIDEBAR & UI HELPERS :::::::::::::::::::::::::: */
     function initSidebarListeners() {
         const sidebar = document.querySelector('sidebar-component');
         if (!sidebar) return;
@@ -629,7 +603,6 @@
         comp.setNotificationDot(hasNotifications);
     }
 
-    /* :::::::::::::::::::::::::: DATABASE OPERATIONS :::::::::::::::::::::::::: */
     async function uploadProjectLogo(file, projectId) {
         const img = await createImageBitmap(file);
         const canvas = document.createElement('canvas');
@@ -774,13 +747,58 @@
         await deleteProjectLogo(id).catch(() => {});
     }
 
-    /* :::::::::::::::::::::::::: PROJECT MODAL :::::::::::::::::::::::::: */
     function openProjectModal(projectId) {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
         currentModalProjectId = projectId;
         buildModalContent(project);
         openModal(elements.modalOverlay);
+    }
+
+    function confirmAsync(message) {
+        return new Promise(resolve => {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal';
+            overlay.style.display = 'flex';
+            overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+            overlay.style.backdropFilter = 'blur(6px)';
+
+            const box = document.createElement('div');
+            box.style.cssText = `
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 12px;
+                padding: 28px;
+                width: 90%;
+                max-width: 380px;
+                color: #F5F5F5;
+                text-align: center;
+                animation: modalIn 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            `;
+            box.innerHTML = `
+                <p style="margin: 0 0 20px; font-size: 15px;">${message}</p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="confirm-yes" style="background: var(--accent, #A7FF3D); color: #000; border: none; border-radius: 8px; padding: 10px 24px; font-family: inherit; font-size: 14px; cursor: pointer;">Yes, delete</button>
+                    <button id="confirm-no" style="background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #F5F5F5; border-radius: 8px; padding: 10px 24px; font-family: inherit; font-size: 14px; cursor: pointer;">Cancel</button>
+                </div>
+            `;
+
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+            document.body.classList.add('modal-open');
+
+            const close = (result) => {
+                overlay.remove();
+                document.body.classList.remove('modal-open');
+                resolve(result);
+            };
+
+            box.querySelector('#confirm-yes').addEventListener('click', () => close(true));
+            box.querySelector('#confirm-no').addEventListener('click', () => close(false));
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) close(false);
+            });
+        });
     }
 
     function buildModalContent(project) {
@@ -828,30 +846,43 @@
             ? `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-size"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5"/></svg>`
             : `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-size"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/></svg>`;
 
+        const historyTable = clone.querySelector('.history-table');
+        if (historyTable) {
+            const theadRow = historyTable.querySelector('thead tr');
+            if (theadRow && theadRow.children.length === 3) {
+                const th = document.createElement('th');
+                th.textContent = '';
+                theadRow.appendChild(th);
+            }
+        }
+
         const historyBody = clone.getElementById('history-list');
         if (project.history.length) {
             const sortedHistory = [...project.history].sort((a, b) => b.start - a.start);
             historyBody.innerHTML = sortedHistory.map(h => {
+                const originalIndex = project.history.indexOf(h);
                 const dateStr = new Date(h.start).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric'
                 });
-                const timeStr = formatTimeOnly(h.start);
-                const endTimeStr = formatTimeOnly(h.end);
+                const startTime = formatTimeOnlyNoSeconds(h.start);
+                const endTime = formatTimeOnlyNoSeconds(h.end);
+                const duration = formatTimeNoSeconds(h.duration);
                 return `
-                    <tr>
+                    <tr data-history-index="${originalIndex}">
                         <td>
                             <span class="history-date">${dateStr}</span>
-                            <span class="history-time">${timeStr}</span>
+                            <span class="history-time">${startTime}</span>
                         </td>
-                        <td>${formatTime(h.duration)}</td>
-                        <td>${timeStr} – ${endTimeStr}</td>
+                        <td>${duration}</td>
+                        <td>${startTime} – ${endTime}</td>
+                        <td><button class="delete-history-btn" title="Delete this session">✕</button></td>
                     </tr>
                 `;
             }).join('');
         } else {
-            historyBody.innerHTML = '<tr><td colspan="3" class="no-sessions">No recorded sessions yet.</td></tr>';
+            historyBody.innerHTML = '<tr><td colspan="4" class="no-sessions">No recorded sessions yet.</td></tr>';
         }
 
         elements.modalContent.innerHTML = '';
@@ -903,6 +934,29 @@
                 });
             });
         }
+
+        const deleteButtons = historyBody.querySelectorAll('.delete-history-btn');
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const row = btn.closest('tr');
+                const index = parseInt(row.dataset.historyIndex);
+                if (isNaN(index)) return;
+
+                const confirmed = await confirmAsync('Are you sure you want to delete this session?');
+                if (!confirmed) return;
+
+                project.history.splice(index, 1);
+                project.elapsed = project.history.reduce((sum, s) => sum + (s.duration || 0), 0);
+
+                showGlobalLoader();
+                await updateProjectInDB(project);
+                hideGlobalLoader();
+
+                buildModalContent(project);
+                render();
+            });
+        });
     }
 
     async function saveModalChanges(project) {
@@ -977,7 +1031,6 @@
         }
     }
 
-    /* :::::::::::::::::::::::::: TIMER LOGIC :::::::::::::::::::::::::: */
     async function toggleTimer(id) {
         const project = projects.find(p => p.id === id);
         if (!project) return;
@@ -1032,7 +1085,6 @@
         }
     }
 
-    /* :::::::::::::::::::::::::: DASHBOARD & CHARTS :::::::::::::::::::::::::: */
     function getWeeklyDurations(project, offsetDays = 0) {
         const now = Date.now();
         const dayMs = 86400000;
@@ -1284,64 +1336,90 @@
         updateBreakdown();
     }
 
-    /* :::::::::::::::::::::::::: MINI PROJECTS (RECENT ACTIVITY) :::::::::::::::::::::::::: */
     function updateWeeklyMiniProjects() {
-        const container = document.getElementById('weekly-mini-projects');
-        if (!container) return;
+    const container = document.getElementById('weekly-mini-projects');
+    if (!container) return;
 
-        const projectsWithActivity = projects.map(p => {
-            let lastActivity = 0;
-            if (p.isRunning) {
-                lastActivity = Date.now();
-            } else if (p.history && p.history.length > 0) {
-                lastActivity = Math.max(...p.history.map(h => h.start));
-            } else if (p.created_at) {
-                lastActivity = new Date(p.created_at).getTime();
-            }
-            return { ...p, lastActivity };
-        });
+    const projectsWithActivity = projects.map(p => {
+        let lastActivity = 0;
+        if (p.isRunning) lastActivity = Date.now();
+        else if (p.history && p.history.length > 0) lastActivity = Math.max(...p.history.map(h => h.start));
+        else if (p.created_at) lastActivity = new Date(p.created_at).getTime();
+        return { ...p, lastActivity };
+    });
 
-        projectsWithActivity.sort((a, b) => b.lastActivity - a.lastActivity);
-        const latestProjects = projectsWithActivity.slice(0, 4);
+    projectsWithActivity.sort((a, b) => b.lastActivity - a.lastActivity);
 
-        if (!latestProjects.length) {
-            container.innerHTML = '';
-            return;
-        }
+    const itemsPerPage = 4;
+    const totalPages = Math.ceil(projectsWithActivity.length / itemsPerPage);
+    if (currentRecentPage >= totalPages) currentRecentPage = totalPages - 1;
+    if (currentRecentPage < 0) currentRecentPage = 0;
 
-        container.innerHTML = latestProjects.map(project => {
-            const elapsed = getDisplayElapsed(project);
-            const logoUrl = project.logo || '';
-            const color = project.color || '#A7FF3D';
+    const start = currentRecentPage * itemsPerPage;
+    const pageItems = projectsWithActivity.slice(start, start + itemsPerPage);
 
-            const logoHTML = logoUrl
-                ? `<img src="${escapeHtml(logoUrl)}" alt="Logo" onerror="this.parentElement.classList.add('broken')">
-                <span class="mini-logo-letter">${escapeHtml(project.name.charAt(0).toUpperCase())}</span>`
-                : `<span class="mini-logo-letter">${escapeHtml(project.name.charAt(0).toUpperCase())}</span>`;
-
-            const bgStyle = logoUrl ? '' : `style="background-color:${color};"`;
-            const timeClass = project.isRunning ? 'mini-time active' : 'mini-time';
-
-            return `
-                <div class="mini-project-card" data-id="${project.id}">
-                    <div class="mini-logo ${logoUrl ? 'has-logo' : ''}" ${bgStyle}>
-                        ${logoHTML}
-                    </div>
-                    <div class="mini-info">
-                        <span class="mini-name">${escapeHtml(project.name)}</span>
-                        <span class="${timeClass}">${formatTime(elapsed)}</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        container.querySelectorAll('.mini-project-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const id = card.dataset.id;
-                if (id) openProjectModal(id);
-            });
-        });
+    if (!projectsWithActivity.length) {
+        container.innerHTML = '';
+        const dotsContainer = document.querySelector('.recent-pagination-dots');
+        if (dotsContainer) dotsContainer.innerHTML = '';
+        return;
     }
+
+    container.innerHTML = pageItems.map(project => {
+        const elapsed = getDisplayElapsed(project);
+        const logoUrl = project.logo || '';
+        const color = project.color || '#A7FF3D';
+        const logoHTML = logoUrl
+            ? `<img src="${escapeHtml(logoUrl)}" alt="Logo" onerror="this.parentElement.classList.add('broken')">
+            <span class="mini-logo-letter">${escapeHtml(project.name.charAt(0).toUpperCase())}</span>`
+            : `<span class="mini-logo-letter">${escapeHtml(project.name.charAt(0).toUpperCase())}</span>`;
+        const bgStyle = logoUrl ? '' : `style="background-color:${color};"`;
+        const timeClass = project.isRunning ? 'mini-time active' : 'mini-time';
+        return `
+            <div class="mini-project-card" data-id="${project.id}">
+                <div class="mini-logo ${logoUrl ? 'has-logo' : ''}" ${bgStyle}>${logoHTML}</div>
+                <div class="mini-info">
+                    <span class="mini-name">${escapeHtml(project.name)}</span>
+                    <span class="${timeClass}">${formatTime(elapsed)}</span>
+                </div>
+            </div>`;
+    }).join('');
+
+    container.querySelectorAll('.mini-project-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.dataset.id;
+            if (id) openProjectModal(id);
+        });
+    });
+
+    // ساخت یا به‌روزرسانی نقطه‌ها
+    let dotsContainer = document.querySelector('.recent-pagination-dots');
+    if (!dotsContainer) {
+        dotsContainer = document.createElement('div');
+        dotsContainer.className = 'recent-pagination-dots';
+        const titleEl = document.querySelector('.recent-activity-title');
+        if (titleEl) titleEl.insertAdjacentElement('afterend', dotsContainer);
+    }
+
+    if (totalPages > 1) {
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < totalPages; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'recent-dot';
+            if (i === currentRecentPage) dot.classList.add('active');
+            dot.dataset.page = i;
+            dot.addEventListener('click', () => {
+                currentRecentPage = i;
+                updateWeeklyMiniProjects();
+            });
+            dotsContainer.appendChild(dot);
+        }
+        dotsContainer.style.display = '';
+    } else {
+        dotsContainer.innerHTML = '';
+        dotsContainer.style.display = 'none';
+    }
+}
 
     function updateMiniCardTimes() {
         const container = document.getElementById('weekly-mini-projects');
@@ -1361,7 +1439,6 @@
         });
     }
 
-    /* :::::::::::::::::::::::::: RENDERING & TICKER :::::::::::::::::::::::::: */
     function render() {
         if (!elements.emptyState || !elements.carousel || !elements.track) return;
 
@@ -1546,16 +1623,19 @@
         }
 
         list.innerHTML = projects.map(project => {
-            const color = project.color || '#A7FF3D';
             return `
                 <button class="sidebar-project-item" data-id="${project.id}">
-                    <span class="sidebar-project-dot" style="background-color:${color};"></span>
+                    <span class="sidebar-project-dash"></span>
                     <span class="sidebar-project-name">${escapeHtml(project.name)}</span>
                 </button>
             `;
         }).join('');
 
         list.querySelectorAll('.sidebar-project-item').forEach(btn => {
+            const project = projects.find(p => p.id === btn.dataset.id);
+            if (project) {
+                btn.style.setProperty('--dash-color', project.color || '#A7FF3D');
+            }
             btn.addEventListener('click', (e) => {
                 const id = btn.dataset.id;
                 if (id) {
@@ -1567,7 +1647,6 @@
         });
     }
 
-    /* :::::::::::::::::::::::::: NEW PROJECT MODAL :::::::::::::::::::::::::: */
     function openNewProjectModal() {
         document.getElementById('new-project-name').value = '';
         document.getElementById('new-project-color').value = '#A7FF3D';
@@ -1633,7 +1712,6 @@
         newProjectLogoFile = null;
     }
 
-    /* :::::::::::::::::::::::::: EVENT BINDING & INITIALIZATION :::::::::::::::::::::::::: */
     function bindTempozioEvents() {
         if (elements.track) {
             elements.track.addEventListener('click', (e) => {
@@ -1741,7 +1819,6 @@
         elements.appContainer.classList.remove('app-hidden');
     }
 
-    /* :::::::::::::::::::::::::: SYNC & UNLOAD :::::::::::::::::::::::::: */
     document.addEventListener('click', (e) => {
         const modal = e.target.closest('.modal');
         if (modal && e.target === modal) closeModal(modal);
@@ -1815,7 +1892,6 @@
         });
     }
 
-    /* :::::::::::::::::::::::::: STARTUP :::::::::::::::::::::::::: */
     document.addEventListener('DOMContentLoaded', async () => {
         setupAuthListeners();
         initSidebarListeners();
